@@ -22,6 +22,26 @@
     // Marcadores de prueba
     L.marker([21.9300, -79.4400]).addTo(map).bindPopup('Origen').openPopup();
     L.marker([21.9250, -79.4450]).addTo(map).bindPopup('Destino');
+
+    // Función para recibir direcciones desde la app
+    function marcarDesdeApp(origen, destino) {
+      function marcar(tipo, direccion) {
+        fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(direccion))
+          .then(res => res.json())
+          .then(data => {
+            if (data.length > 0) {
+              var lat = parseFloat(data[0].lat);
+              var lon = parseFloat(data[0].lon);
+              var punto = [lat, lon];
+              var marker = L.marker(punto).addTo(map).bindPopup(tipo).openPopup();
+              map.setView(punto, 14);
+            }
+          });
+      }
+
+      if (origen) marcar('Origen', origen);
+      if (destino) marcar('Destino', destino);
+    }
   </script>
 </body>
 </html>
