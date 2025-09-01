@@ -23,6 +23,28 @@
 
     var rutaControl = null;
 
+    // 🔍 Detectar ubicación actual y enviar dirección a la app
+    map.locate({ setView: true, maxZoom: 16 });
+
+    map.on('locationfound', function(e) {
+      var marker = L.marker(e.latlng).addTo(map).bindPopup('Tu ubicación').openPopup();
+
+      fetch('https://nominatim.openstreetmap.org/reverse?format=json&lat=' + e.latitude + '&lon=' + e.longitude)
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.display_name) {
+            if (window.Android && window.Android.setOrigen) {
+              window.Android.setOrigen(data.display_name);
+            }
+          }
+        });
+    });
+
+    map.on('locationerror', function() {
+      alert('No se pudo obtener tu ubicación');
+    });
+
+    // 📍 Función para marcar origen/destino y trazar ruta
     function marcarDesdeApp(origen, destino) {
       function buscarCoordenadas(direccion, callback) {
         fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(direccion) +
