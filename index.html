@@ -5,6 +5,7 @@
   <title>Mapa MiRutaSS</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
   <style>
     html, body, #map { height: 100%; margin: 0; padding: 0; }
   </style>
@@ -12,6 +13,7 @@
 <body>
   <div id="map"></div>
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.min.js"></script>
   <script>
     var map = L.map('map').setView([21.9276, -79.4432], 14);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -19,28 +21,53 @@
       attribution: '© OpenStreetMap'
     }).addTo(map);
 
-    // Marcadores de prueba
-    L.marker([21.9300, -79.4400]).addTo(map).bindPopup('Origen').openPopup();
-    L.marker([21.9250, -79.4450]).addTo(map).bindPopup('Destino');
+    var rutaControl = null;
 
-    // Función para recibir direcciones desde la app
     function marcarDesdeApp(origen, destino) {
-      function marcar(tipo, direccion) {
-        fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(direccion))
+      function buscarCoordenadas(direccion, callback) {
+        fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(direccion) +
+              '&countrycodes=cu&viewbox=-79.5000,21.9500,-79.4000,21.9000&bounded=1')
           .then(res => res.json())
           .then(data => {
             if (data.length > 0) {
               var lat = parseFloat(data[0].lat);
               var lon = parseFloat(data[0].lon);
-              var punto = [lat, lon];
-              var marker = L.marker(punto).addTo(map).bindPopup(tipo).openPopup();
-              map.setView(punto, 14);
+              callback([lat, lon]);
+            } else {
+              callback(null);
             }
           });
       }
 
-      if (origen) marcar('Origen', origen);
-      if (destino) marcar('Destino', destino);
+      buscarCoordenadas(origen, function(puntoOrigen) {
+        if (puntoOrigen) {
+          L.marker(puntoOrigen).addTo(map).bindPopup('Origen').openPopup();
+          map.setView(puntoOrigen, 14);
+
+          buscarCoordenadas(destino, function(puntoDestino) {
+            if (puntoDestino) {
+              L.marker(puntoDestino).addTo(map).bindPopup('Destino').openPopup();
+
+              if (rutaControl) {
+                map.removeControl(rutaControl);
+              }
+
+              rutaControl = L.Routing.control({
+                waypoints: [
+                  L.latLng(puntoOrigen[0], puntoOrigen[1]),
+                  L.latLng(puntoDestino[0], puntoDestino[1])
+                ],
+                lineOptions: {
+                  styles: [{ color: '#6764FD', weight: 5 }]
+                },
+                createMarker: function() { return null; },
+                addWaypoints: false,
+                routeWhileDragging: false
+              }).addTo(map);
+            }
+          });
+        }
+      });
     }
   </script>
 </body>
