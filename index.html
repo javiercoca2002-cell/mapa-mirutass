@@ -26,6 +26,7 @@
     var marcadorOrigen = null;
     var marcadorDestino = null;
     var direccionDetectada = "";
+    var coordenadasUbicacion = null;
     var origenModificado = false;
 
     // 🔍 Detectar ubicación actual y enviar dirección a la app
@@ -34,6 +35,8 @@
     }
 
     map.on('locationfound', function(e) {
+      coordenadasUbicacion = [e.latitude, e.longitude];
+
       if (markerUbicacion) {
         map.removeLayer(markerUbicacion);
       }
@@ -99,35 +102,65 @@
         marcadorDestino = null;
       }
 
-      buscarCoordenadas(origen, function(puntoOrigen) {
-        if (puntoOrigen) {
-          marcadorOrigen = L.marker(puntoOrigen).addTo(map).bindPopup('Origen').openPopup();
-          map.setView(puntoOrigen, 14);
+      // 🧠 Si el origen es la ubicación detectada, usar coordenadas reales
+      if (origen === direccionDetectada && coordenadasUbicacion) {
+        marcadorOrigen = markerUbicacion;
 
-          buscarCoordenadas(destino, function(puntoDestino) {
-            if (puntoDestino) {
-              marcadorDestino = L.marker(puntoDestino).addTo(map).bindPopup('Destino').openPopup();
+        buscarCoordenadas(destino, function(puntoDestino) {
+          if (puntoDestino) {
+            marcadorDestino = L.marker(puntoDestino).addTo(map).bindPopup('Destino').openPopup();
 
-              if (rutaControl) {
-                map.removeControl(rutaControl);
-              }
-
-              rutaControl = L.Routing.control({
-                waypoints: [
-                  L.latLng(puntoOrigen[0], puntoOrigen[1]),
-                  L.latLng(puntoDestino[0], puntoDestino[1])
-                ],
-                lineOptions: {
-                  styles: [{ color: '#6764FD', weight: 5 }]
-                },
-                createMarker: function() { return null; },
-                addWaypoints: false,
-                routeWhileDragging: false
-              }).addTo(map);
+            if (rutaControl) {
+              map.removeControl(rutaControl);
             }
-          });
-        }
-      });
+
+            rutaControl = L.Routing.control({
+              waypoints: [
+                L.latLng(coordenadasUbicacion[0], coordenadasUbicacion[1]),
+                L.latLng(puntoDestino[0], puntoDestino[1])
+              ],
+              lineOptions: {
+                styles: [{ color: '#6764FD', weight: 5 }]
+              },
+              createMarker: function() { return null; },
+              addWaypoints: false,
+              routeWhileDragging: false
+            }).addTo(map);
+          }
+        });
+
+      } else {
+        // 🧭 Si el origen fue modificado, buscar coordenadas por texto
+        buscarCoordenadas(origen, function(puntoOrigen) {
+          if (puntoOrigen) {
+            marcadorOrigen = L.marker(puntoOrigen).addTo(map).bindPopup('Origen').openPopup();
+            map.setView(puntoOrigen, 14);
+
+            buscarCoordenadas(destino, function(puntoDestino) {
+              if (puntoDestino) {
+                marcadorDestino = L.marker(puntoDestino).addTo(map).bindPopup('Destino').openPopup();
+
+                if (rutaControl) {
+                  map.removeControl(rutaControl);
+                }
+
+                rutaControl = L.Routing.control({
+                  waypoints: [
+                    L.latLng(puntoOrigen[0], puntoOrigen[1]),
+                    L.latLng(puntoDestino[0], puntoDestino[1])
+                  ],
+                  lineOptions: {
+                    styles: [{ color: '#6764FD', weight: 5 }]
+                  },
+                  createMarker: function() { return null; },
+                  addWaypoints: false,
+                  routeWhileDragging: false
+                }).addTo(map);
+              }
+            });
+          }
+        });
+      }
     }
 
     // 🚀 Ejecutar ubicación al cargar
