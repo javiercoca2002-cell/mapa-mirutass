@@ -22,12 +22,19 @@
     }).addTo(map);
 
     var rutaControl = null;
+    var markerUbicacion = null;
 
     // 🔍 Detectar ubicación actual y enviar dirección a la app
-    map.locate({ setView: true, maxZoom: 16 });
+    function detectarUbicacion() {
+      map.locate({ setView: true, maxZoom: 16 });
+    }
 
     map.on('locationfound', function(e) {
-      var marker = L.marker(e.latlng).addTo(map).bindPopup('Tu ubicación').openPopup();
+      if (markerUbicacion) {
+        map.removeLayer(markerUbicacion);
+      }
+
+      markerUbicacion = L.marker(e.latlng).addTo(map).bindPopup('Tu ubicación').openPopup();
 
       fetch('https://nominatim.openstreetmap.org/reverse?format=json&lat=' + e.latitude + '&lon=' + e.longitude)
         .then(res => res.json())
@@ -43,6 +50,19 @@
     map.on('locationerror', function() {
       alert('No se pudo obtener tu ubicación');
     });
+
+    // 🧹 Eliminar marcador de ubicación si el usuario modifica el campo origen
+    function eliminarUbicacion() {
+      if (markerUbicacion) {
+        map.removeLayer(markerUbicacion);
+        markerUbicacion = null;
+      }
+    }
+
+    // 🔁 Restaurar ubicación desde la app
+    function restaurarUbicacion() {
+      detectarUbicacion();
+    }
 
     // 📍 Función para marcar origen/destino y trazar ruta
     function marcarDesdeApp(origen, destino) {
@@ -91,6 +111,9 @@
         }
       });
     }
+
+    // 🚀 Ejecutar ubicación al cargar
+    detectarUbicacion();
   </script>
 </body>
 </html>
