@@ -23,6 +23,8 @@
 
     var rutaControl = null;
     var markerUbicacion = null;
+    var marcadorOrigen = null;
+    var marcadorDestino = null;
 
     // 🔍 Detectar ubicación actual y enviar dirección a la app
     function detectarUbicacion() {
@@ -81,14 +83,24 @@
           });
       }
 
+      // 🧼 Eliminar marcadores anteriores
+      if (marcadorOrigen) {
+        map.removeLayer(marcadorOrigen);
+        marcadorOrigen = null;
+      }
+      if (marcadorDestino) {
+        map.removeLayer(marcadorDestino);
+        marcadorDestino = null;
+      }
+
       buscarCoordenadas(origen, function(puntoOrigen) {
         if (puntoOrigen) {
-          L.marker(puntoOrigen).addTo(map).bindPopup('Origen').openPopup();
+          marcadorOrigen = L.marker(puntoOrigen).addTo(map).bindPopup('Origen').openPopup();
           map.setView(puntoOrigen, 14);
 
           buscarCoordenadas(destino, function(puntoDestino) {
             if (puntoDestino) {
-              L.marker(puntoDestino).addTo(map).bindPopup('Destino').openPopup();
+              marcadorDestino = L.marker(puntoDestino).addTo(map).bindPopup('Destino').openPopup();
 
               if (rutaControl) {
                 map.removeControl(rutaControl);
