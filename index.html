@@ -29,7 +29,6 @@
     var coordenadasUbicacion = null;
     var origenModificado = false;
 
-    // 🔍 Detectar ubicación actual y enviar dirección a la app
     function detectarUbicacion() {
       map.locate({ setView: true, maxZoom: 16 });
     }
@@ -60,7 +59,6 @@
       alert('No se pudo obtener tu ubicación');
     });
 
-    // 🧹 Eliminar marcador de ubicación si el usuario modifica el campo origen
     function eliminarUbicacion() {
       origenModificado = true;
       if (markerUbicacion) {
@@ -69,17 +67,14 @@
       }
     }
 
-    // 🔁 Restaurar ubicación desde la app y limpiar ruta
     function restaurarUbicacion() {
       origenModificado = false;
 
-      // 🧹 Eliminar ruta si existe
       if (rutaControl) {
         map.removeControl(rutaControl);
         rutaControl = null;
       }
 
-      // 🧹 Eliminar marcadores de origen y destino si existen
       if (marcadorOrigen) {
         map.removeLayer(marcadorOrigen);
         marcadorOrigen = null;
@@ -92,7 +87,6 @@
       detectarUbicacion();
     }
 
-    // 📍 Función para marcar origen/destino y trazar ruta
     function marcarDesdeApp(origen, destino) {
       function buscarCoordenadas(direccion, callback) {
         fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(direccion) +
@@ -109,7 +103,6 @@
           });
       }
 
-      // 🧼 Eliminar marcadores anteriores
       if (marcadorOrigen) {
         map.removeLayer(marcadorOrigen);
         marcadorOrigen = null;
@@ -119,7 +112,6 @@
         marcadorDestino = null;
       }
 
-      // 🧠 Si el origen es la ubicación detectada, usar coordenadas reales
       if (origen === direccionDetectada && coordenadasUbicacion) {
         marcadorOrigen = markerUbicacion;
 
@@ -147,7 +139,6 @@
         });
 
       } else {
-        // 🧭 Si el origen fue modificado, buscar coordenadas por texto
         buscarCoordenadas(origen, function(puntoOrigen) {
           if (puntoOrigen) {
             marcadorOrigen = L.marker(puntoOrigen).addTo(map).bindPopup('Origen').openPopup();
@@ -180,7 +171,26 @@
       }
     }
 
-    // 🚀 Ejecutar ubicación al cargar
+    function borrarRutaDesdeApp() {
+      if (rutaControl) {
+        map.removeControl(rutaControl);
+        rutaControl = null;
+
+        if (marcadorOrigen) {
+          map.removeLayer(marcadorOrigen);
+          marcadorOrigen = null;
+        }
+        if (marcadorDestino) {
+          map.removeLayer(marcadorDestino);
+          marcadorDestino = null;
+        }
+
+        alert("Ruta eliminada correctamente");
+      } else {
+        alert("No existe una ruta definitiva que borrar.");
+      }
+    }
+
     detectarUbicacion();
   </script>
 </body>
