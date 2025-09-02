@@ -69,9 +69,26 @@
       }
     }
 
-    // 🔁 Restaurar ubicación desde la app
+    // 🔁 Restaurar ubicación desde la app y limpiar ruta
     function restaurarUbicacion() {
       origenModificado = false;
+
+      // 🧹 Eliminar ruta si existe
+      if (rutaControl) {
+        map.removeControl(rutaControl);
+        rutaControl = null;
+      }
+
+      // 🧹 Eliminar marcadores de origen y destino si existen
+      if (marcadorOrigen) {
+        map.removeLayer(marcadorOrigen);
+        marcadorOrigen = null;
+      }
+      if (marcadorDestino) {
+        map.removeLayer(marcadorDestino);
+        marcadorDestino = null;
+      }
+
       detectarUbicacion();
     }
 
