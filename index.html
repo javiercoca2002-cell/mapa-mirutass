@@ -25,6 +25,8 @@
     var markerUbicacion = null;
     var marcadorOrigen = null;
     var marcadorDestino = null;
+    var direccionDetectada = "";
+    var origenModificado = false;
 
     // 🔍 Detectar ubicación actual y enviar dirección a la app
     function detectarUbicacion() {
@@ -42,8 +44,10 @@
         .then(res => res.json())
         .then(data => {
           if (data && data.display_name) {
-            if (window.Android && window.Android.setOrigen) {
-              window.Android.setOrigen(data.display_name);
+            direccionDetectada = data.display_name;
+
+            if (!origenModificado && window.Android && window.Android.setOrigen) {
+              window.Android.setOrigen(direccionDetectada);
             }
           }
         });
@@ -55,6 +59,7 @@
 
     // 🧹 Eliminar marcador de ubicación si el usuario modifica el campo origen
     function eliminarUbicacion() {
+      origenModificado = true;
       if (markerUbicacion) {
         map.removeLayer(markerUbicacion);
         markerUbicacion = null;
@@ -63,6 +68,7 @@
 
     // 🔁 Restaurar ubicación desde la app
     function restaurarUbicacion() {
+      origenModificado = false;
       detectarUbicacion();
     }
 
