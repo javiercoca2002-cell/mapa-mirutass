@@ -8,6 +8,14 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
   <style>
     html, body, #map { height: 100%; margin: 0; padding: 0; }
+    .marcador-flotante div {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #6764FD;
+      border: 2px solid white;
+      box-shadow: 0 0 10px #6764FD;
+    }
   </style>
 </head>
 <body>
@@ -28,6 +36,8 @@
     var direccionDetectada = "";
     var coordenadasUbicacion = null;
     var origenModificado = false;
+    var marcadorFlotante = null;
+    var modoSeleccion = null; // 'origen' o 'destino'
 
     function detectarUbicacion() {
       map.locate({ setView: true, maxZoom: 16 });
@@ -85,6 +95,73 @@
       }
 
       detectarUbicacion();
+    }
+
+    function activarMarcadorFlotante(tipo) {
+      modoSeleccion = tipo;
+
+      if (marcadorFlotante) {
+        map.removeLayer(marcadorFlotante);
+      }
+
+      var centro = map.getCenter();
+      marcadorFlotante = L.marker(centro, {
+        draggable: false,
+        icon: L.divIcon({
+          className: 'marcador-flotante',
+          html: '<div></div>',
+          iconSize: [20, 20],
+          iconAnchor: [10, 10]
+        })
+      }).addTo(map);
+    }
+
+    function confirmarMarcadorFlotante(tipo) {
+      if (!marcadorFlotante) return;
+
+      var coords = marcadorFlotante.getLatLng();
+
+      fetch('https://nominatim.openstreetmap.org/reverse?format=json&lat=' + coords.lat + '&lon=' + coords.lng)
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.display_name) {
+            var direccion = data.display_name;
+
+            if (tipo === 'origen') {
+              if (marcadorOrigen) map.removeLayer(marcadorOrigen);
+              marcadorOrigen = L.marker(coords).addTo(map).bindPopup('Origen').openPopup();
+              if (window.Android && window.Android.setOrigen) {
+                window.Android.setOrigen(direccion);
+              }
+            } else if (tipo === 'destino') {
+              if (marcadorDestino) map.removeLayer(marcadorDestino);
+              marcadorDestino = L.marker(coords).addTo(map).bindPopup('Destino').openPopup();
+              if (window.Android && window.Android.setDestino) {
+                window.Android.setDestino(direccion);
+              }
+            }
+
+            if (marcadorOrigen && marcadorDestino) {
+              if (rutaControl) map.removeControl(rutaControl);
+              rutaControl = L.Routing.control({
+                waypoints: [
+                  marcadorOrigen.getLatLng(),
+                  marcadorDestino.getLatLng()
+                ],
+                lineOptions: {
+                  styles: [{ color: '#6764FD', weight: 5 }]
+                },
+                createMarker: () => null,
+                addWaypoints: false,
+                routeWhileDragging: false
+              }).addTo(map);
+            }
+
+            map.removeLayer(marcadorFlotante);
+            marcadorFlotante = null;
+            modoSeleccion = null;
+          }
+        });
     }
 
     function marcarDesdeApp(origen, destino) {
@@ -179,7 +256,7 @@
         if (marcadorOrigen) {
           map.removeLayer(marcadorOrigen);
           marcadorOrigen = null;
-        }
+}
         if (marcadorDestino) {
           map.removeLayer(marcadorDestino);
           marcadorDestino = null;
