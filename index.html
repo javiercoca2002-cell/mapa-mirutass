@@ -8,18 +8,28 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
   <style>
     html, body, #map { height: 100%; margin: 0; padding: 0; }
-    .marcador-flotante div {
+    #marcador-centro {
+      position: absolute;
+      top: 50%;
+      left: 50%;
       width: 20px;
       height: 20px;
+      margin-left: -10px;
+      margin-top: -10px;
       border-radius: 50%;
       background: #6764FD;
       border: 2px solid white;
       box-shadow: 0 0 10px #6764FD;
+      z-index: 999;
+      pointer-events: none;
+      display: none;
     }
   </style>
 </head>
 <body>
   <div id="map"></div>
+  <div id="marcador-centro"></div>
+
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.min.js"></script>
   <script>
@@ -36,8 +46,7 @@
     var direccionDetectada = "";
     var coordenadasUbicacion = null;
     var origenModificado = false;
-    var marcadorFlotante = null;
-    var modoSeleccion = null; // 'origen' o 'destino'
+    var modoSeleccion = null;
 
     function detectarUbicacion() {
       map.locate({ setView: true, maxZoom: 16 });
@@ -99,27 +108,12 @@
 
     function activarMarcadorFlotante(tipo) {
       modoSeleccion = tipo;
-
-      if (marcadorFlotante) {
-        map.removeLayer(marcadorFlotante);
-      }
-
-      var centro = map.getCenter();
-      marcadorFlotante = L.marker(centro, {
-        draggable: false,
-        icon: L.divIcon({
-          className: 'marcador-flotante',
-          html: '<div></div>',
-          iconSize: [20, 20],
-          iconAnchor: [10, 10]
-        })
-      }).addTo(map);
+      document.getElementById("marcador-centro").style.display = "block";
     }
 
     function confirmarMarcadorFlotante(tipo) {
-      if (!marcadorFlotante) return;
-
-      var coords = marcadorFlotante.getLatLng();
+      var coords = map.getCenter();
+      document.getElementById("marcador-centro").style.display = "none";
 
       fetch('https://nominatim.openstreetmap.org/reverse?format=json&lat=' + coords.lat + '&lon=' + coords.lng)
         .then(res => res.json())
@@ -157,8 +151,6 @@
               }).addTo(map);
             }
 
-            map.removeLayer(marcadorFlotante);
-            marcadorFlotante = null;
             modoSeleccion = null;
           }
         });
@@ -256,7 +248,7 @@
         if (marcadorOrigen) {
           map.removeLayer(marcadorOrigen);
           marcadorOrigen = null;
-}
+        }
         if (marcadorDestino) {
           map.removeLayer(marcadorDestino);
           marcadorDestino = null;
