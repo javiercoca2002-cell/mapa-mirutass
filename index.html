@@ -24,11 +24,45 @@
       pointer-events: none;
       display: none;
     }
+    #botones-mapa {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .boton-mapa {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background-color: #6764FD;
+      color: white;
+      border: none;
+      font-size: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+      cursor: pointer;
+      transition: background 0.2s ease, transform 0.1s ease;
+    }
+    .boton-mapa:hover {
+      background-color: #4b48c9;
+      transform: scale(1.05);
+    }
   </style>
 </head>
 <body>
   <div id="map"></div>
   <div id="marcador-centro"></div>
+  <div id="botones-mapa">
+    <button onclick="toggleOrigen()" class="boton-mapa" title="Fijar origen">📍</button>
+    <button onclick="toggleDestino()" class="boton-mapa" title="Fijar destino">🎯</button>
+    <button onclick="borrarRutaDesdeApp()" class="boton-mapa" title="Borrar ruta">🗑️</button>
+    <button onclick="restaurarUbicacion()" class="boton-mapa" title="Restaurar ubicación">🔄</button>
+  </div>
 
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.min.js"></script>
@@ -47,6 +81,31 @@
     var coordenadasUbicacion = null;
     var origenModificado = false;
     var modoSeleccion = null;
+    var seleccionandoOrigen = false;
+    var seleccionandoDestino = false;
+
+    function toggleOrigen() {
+      if (!seleccionandoOrigen) {
+        seleccionandoOrigen = true;
+        seleccionandoDestino = false;
+        activarMarcadorFlotante('origen');
+      } else {
+        seleccionandoOrigen = false;
+        confirmarMarcadorFlotante('origen');
+        eliminarUbicacion();
+      }
+    }
+
+    function toggleDestino() {
+      if (!seleccionandoDestino) {
+        seleccionandoDestino = true;
+        seleccionandoOrigen = false;
+        activarMarcadorFlotante('destino');
+      } else {
+        seleccionandoDestino = false;
+        confirmarMarcadorFlotante('destino');
+      }
+    }
 
     function detectarUbicacion() {
       map.locate({ setView: true, maxZoom: 16 });
@@ -154,90 +213,6 @@
             modoSeleccion = null;
           }
         });
-    }
-
-    function marcarDesdeApp(origen, destino) {
-      function buscarCoordenadas(direccion, callback) {
-        fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(direccion) +
-              '&countrycodes=cu&viewbox=-79.5000,21.9500,-79.4000,21.9000&bounded=1')
-          .then(res => res.json())
-          .then(data => {
-            if (data.length > 0) {
-              var lat = parseFloat(data[0].lat);
-              var lon = parseFloat(data[0].lon);
-              callback([lat, lon]);
-            } else {
-              callback(null);
-            }
-          });
-      }
-
-      if (marcadorOrigen) {
-        map.removeLayer(marcadorOrigen);
-        marcadorOrigen = null;
-      }
-      if (marcadorDestino) {
-        map.removeLayer(marcadorDestino);
-        marcadorDestino = null;
-      }
-
-      if (origen === direccionDetectada && coordenadasUbicacion) {
-        marcadorOrigen = markerUbicacion;
-
-        buscarCoordenadas(destino, function(puntoDestino) {
-          if (puntoDestino) {
-            marcadorDestino = L.marker(puntoDestino).addTo(map).bindPopup('Destino').openPopup();
-
-            if (rutaControl) {
-              map.removeControl(rutaControl);
-            }
-
-            rutaControl = L.Routing.control({
-              waypoints: [
-                L.latLng(coordenadasUbicacion[0], coordenadasUbicacion[1]),
-                L.latLng(puntoDestino[0], puntoDestino[1])
-              ],
-              lineOptions: {
-                styles: [{ color: '#6764FD', weight: 5 }]
-              },
-              createMarker: function() { return null; },
-              addWaypoints: false,
-              routeWhileDragging: false
-            }).addTo(map);
-          }
-        });
-
-      } else {
-        buscarCoordenadas(origen, function(puntoOrigen) {
-          if (puntoOrigen) {
-            marcadorOrigen = L.marker(puntoOrigen).addTo(map).bindPopup('Origen').openPopup();
-            map.setView(puntoOrigen, 14);
-
-            buscarCoordenadas(destino, function(puntoDestino) {
-              if (puntoDestino) {
-                marcadorDestino = L.marker(puntoDestino).addTo(map).bindPopup('Destino').openPopup();
-
-                if (rutaControl) {
-                  map.removeControl(rutaControl);
-                }
-
-                rutaControl = L.Routing.control({
-                  waypoints: [
-                    L.latLng(puntoOrigen[0], puntoOrigen[1]),
-                    L.latLng(puntoDestino[0], puntoDestino[1])
-                  ],
-                  lineOptions: {
-                    styles: [{ color: '#6764FD', weight: 5 }]
-                  },
-                  createMarker: function() { return null; },
-                  addWaypoints: false,
-                  routeWhileDragging: false
-                }).addTo(map);
-              }
-            });
-          }
-        });
-      }
     }
 
     function borrarRutaDesdeApp() {
