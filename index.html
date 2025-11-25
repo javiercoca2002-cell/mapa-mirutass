@@ -324,8 +324,7 @@
     });
 
     var rutaControl = null;
-    var markerUbicacion = null;
-    var marcadorOrigen = null;
+    var markerUbicacion = null; // Único marcador para ubicación/origen
     var marcadorDestino = null;
     var direccionDetectada = "";
     var coordenadasUbicacion = null;
@@ -375,12 +374,15 @@
 
     map.on('locationfound', function(e) {
       coordenadasUbicacion = [e.latitude, e.longitude];
-      if (markerUbicacion) map.removeLayer(markerUbicacion);
-      markerUbicacion = L.marker(e.latlng).addTo(map).bindPopup('Tu ubicación').openPopup();
-
-      // CREAR MARCADOR DE ORIGEN AUTOMÁTICAMENTE CON LA GEOLOCALIZACIÓN
-      if (!marcadorOrigen && !origenModificado) {
-        marcadorOrigen = L.marker(e.latlng).addTo(map).bindPopup('Origen automático');
+      
+      // SOLO crear marcador si no hay uno existente y no se ha modificado manualmente
+      if (!markerUbicacion && !origenModificado) {
+        markerUbicacion = L.marker(e.latlng).addTo(map).bindPopup('Tu ubicación').openPopup();
+      }
+      
+      // Actualizar la ubicación del marcador existente si es la ubicación automática
+      else if (markerUbicacion && !origenModificado) {
+        markerUbicacion.setLatLng(e.latlng);
       }
 
       // MEJORA: Manejo de errores en fetch
@@ -428,8 +430,14 @@
     function restaurarUbicacion() {
       origenModificado = false;
       if (rutaControl) { map.removeControl(rutaControl); rutaControl = null; }
-      if (marcadorOrigen) { map.removeLayer(marcadorOrigen); marcadorOrigen = null; }
       if (marcadorDestino) { map.removeLayer(marcadorDestino); marcadorDestino = null; }
+      
+      // NO eliminar markerUbicacion aquí, solo permitir que se actualice con la ubicación
+      if (markerUbicacion) {
+        // Mantener el marcador pero permitir que se actualice con la ubicación automática
+        map.removeLayer(markerUbicacion);
+        markerUbicacion = null;
+      }
 
       // MEJORA: Limpiar campos en Android al restaurar
       if (window.Android && window.Android.limpiarDirecciones) {
@@ -462,8 +470,14 @@
           if (data && data.display_name) {
             var direccion = data.display_name;
             if (tipo === 'origen') {
-              if (marcadorOrigen) map.removeLayer(marcadorOrigen);
-              marcadorOrigen = L.marker(coords).addTo(map).bindPopup('Origen').openPopup();
+              // USAR EL MISMO MARCADOR PARA UBICACIÓN Y ORIGEN
+              if (markerUbicacion) {
+                markerUbicacion.setLatLng(coords);
+                markerUbicacion.setPopupContent('Origen manual').openPopup();
+              } else {
+                markerUbicacion = L.marker(coords).addTo(map).bindPopup('Origen manual').openPopup();
+              }
+              origenModificado = true; // Marcar como modificado manualmente
               if (window.Android && window.Android.setOrigen) window.Android.setOrigen(direccion);
               mostrarNotificacion('Origen establecido correctamente', 'success');
             } else if (tipo === 'destino') {
@@ -520,8 +534,8 @@
 
     // FUNCIÓN: OBTENER ORIGEN ACTUAL (AUTOMÁTICO O MANUAL)
     function obtenerOrigenActual() {
-      if (marcadorOrigen) {
-        return marcadorOrigen.getLatLng();
+      if (markerUbicacion) {
+        return markerUbicacion.getLatLng();
       } else if (coordenadasUbicacion && !origenModificado) {
         return L.latLng(coordenadasUbicacion[0], coordenadasUbicacion[1]);
       }
@@ -530,7 +544,7 @@
 
     // MEJORA: Función mejorada con notificación detallada
     function borrarRutaDesdeApp() {
-      if (rutaControl || marcadorOrigen || marcadorDestino) {
+      if (rutaControl || markerUbicacion || marcadorDestino) {
         let elementosEliminados = [];
 
         if (rutaControl) {
@@ -539,9 +553,9 @@
           elementosEliminados.push('ruta');
         }
 
-        if (marcadorOrigen) { 
-          map.removeLayer(marcadorOrigen); 
-          marcadorOrigen = null; 
+        if (markerUbicacion) { 
+          map.removeLayer(markerUbicacion); 
+          markerUbicacion = null; 
           elementosEliminados.push('origen');
         }
 
@@ -565,22 +579,97 @@
       }
     }
 
+    // FUNCIÓN: LIMPIAR SOLO EL MARCADOR DE ORIGEN
+    function limpiarMarcadorOrigen() {
+      if (markerUbicacion) {
+        map.removeLayer(markerUbicacion);
+        markerUbicacion = null;
+        origenModificado = false;
+        
+        // Si hay ruta activa, quitarla
+        if (rutaControl) {
+          map.removeControl(rutaControl);
+          rutaControl = null;
+        }
+        
+        // Limpiar selección si estaba activa
+        if (seleccionandoOrigen) {
+          seleccionandoOrigen = false;
+          document.getElementById('btn-origen').classList.remove('modo-activo');
+          document.getElementById('marcador-centro').classList.remove('marcador-activo');
+        }
+        
+        // Notificar a la app Android que se limpió el origen
+        if (window.Android && window.Android.limpiarOrigen) {
+          window.Android.limpiarOrigen();
+        }
+        
+        mostrarNotificacion('Origen eliminado', 'success');
+      } else {
+        mostrarNotificacion('No hay origen para eliminar', 'info');
+      }
+    }
+
+    // FUNCIÓN: LIMPIAR SOLO EL MARCADOR DE DESTINO
+    function limpiarMarcadorDestino() {
+      if (marcadorDestino) {
+        map.removeLayer(marcadorDestino);
+        marcadorDestino = null;
+        
+        // Si hay ruta activa, quitarla
+        if (rutaControl) {
+          map.removeControl(rutaControl);
+          rutaControl = null;
+        }
+        
+        // Limpiar selección si estaba activa
+        if (seleccionandoDestino) {
+          seleccionandoDestino = false;
+          document.getElementById('btn-destino').classList.remove('modo-activo');
+          document.getElementById('marcador-centro').classList.remove('marcador-activo');
+        }
+        
+        // Notificar a la app Android que se limpió el destino
+        if (window.Android && window.Android.limpiarDestino) {
+          window.Android.limpiarDestino();
+        }
+        
+        mostrarNotificacion('Destino eliminado', 'success');
+      } else {
+        mostrarNotificacion('No hay destino para eliminar', 'info');
+      }
+    }
+
+    // FUNCIÓN PARA LIMPIAR AMBOS CAMPOS DESDE ANDROID
+    function limpiarDireccionesDesdeAndroid() {
+      limpiarMarcadorOrigen();
+      limpiarMarcadorDestino();
+      
+      // También limpiar ubicación si es necesario
+      if (markerUbicacion) {
+        map.removeLayer(markerUbicacion);
+        markerUbicacion = null;
+      }
+      
+      mostrarNotificacion('Direcciones limpiadas', 'success');
+    }
+
     // NUEVA FUNCIÓN: MOSTRAR DIRECCIONES DESDE ANDROID
     function mostrarDireccionesEnMapa(origen, destino) {
         console.log("Mostrando en mapa - Origen:", origen, "Destino:", destino);
-        
+
         if (!origen || !destino || origen.trim() === '' || destino.trim() === '') {
             mostrarNotificacion('Debes proporcionar origen y destino', 'error');
             return;
         }
-        
+
         // Limpiar marcadores existentes
-        if (marcadorOrigen) map.removeLayer(marcadorOrigen);
+        if (markerUbicacion) map.removeLayer(markerUbicacion);
         if (marcadorDestino) map.removeLayer(marcadorDestino);
         if (rutaControl) map.removeControl(rutaControl);
-        
+
         mostrarNotificacion('Buscando ubicaciones en el mapa...');
-        
+
         // Función para convertir dirección a coordenadas
         function geocodificarDireccion(direccion, esOrigen) {
             return fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(direccion)}&limit=1&accept-language=es`)
@@ -593,27 +682,37 @@
                         const lat = parseFloat(data[0].lat);
                         const lon = parseFloat(data[0].lon);
                         const coords = L.latLng(lat, lon);
-                        
+
                         // Crear marcador
                         const marcador = L.marker(coords).addTo(map);
                         const tipo = esOrigen ? 'Origen' : 'Destino';
                         const icono = esOrigen ? '📍' : '🎯';
-                        
+
                         marcador.bindPopup(`${icono} <strong>${tipo}</strong><br>${direccion}`).openPopup();
-                        
+
                         if (esOrigen) {
-                            marcadorOrigen = marcador;
+                            // USAR markerUbicacion PARA EL ORIGEN
+                            if (markerUbicacion) {
+                                markerUbicacion.setLatLng(coords);
+                                markerUbicacion.setPopupContent(`${icono} <strong>${tipo}</strong><br>${direccion}`).openPopup();
+                            } else {
+                                markerUbicacion = L.marker(coords).addTo(map)
+                                    .bindPopup(`${icono} <strong>${tipo}</strong><br>${direccion}`).openPopup();
+                            }
+                            origenModificado = true;
                         } else {
-                            marcadorDestino = marcador;
+                            if (marcadorDestino) map.removeLayer(marcadorDestino);
+                            marcadorDestino = L.marker(coords).addTo(map)
+                                .bindPopup(`${icono} <strong>${tipo}</strong><br>${direccion}`).openPopup();
                         }
-                        
+
                         return coords;
                     } else {
                         throw new Error(`No se encontró: "${direccion}"`);
                     }
                 });
         }
-        
+
         // Procesar ambas direcciones
         Promise.all([
             geocodificarDireccion(origen, true),
@@ -621,12 +720,12 @@
         ])
         .then(([coordsOrigen, coordsDestino]) => {
             // Centrar el mapa para mostrar ambos puntos
-            const group = new L.featureGroup([marcadorOrigen, marcadorDestino]);
+            const group = new L.featureGroup([markerUbicacion, marcadorDestino]);
             map.fitBounds(group.getBounds().pad(0.1));
-            
+
             // Crear ruta entre los puntos
             if (rutaControl) map.removeControl(rutaControl);
-            
+
             rutaControl = L.Routing.control({
                 waypoints: [coordsOrigen, coordsDestino],
                 lineOptions: { styles: [{ color: '#6764FD', weight: 5 }] },
@@ -635,7 +734,7 @@
                 routeWhileDragging: false,
                 show: false
             }).addTo(map);
-            
+
             // Mostrar información cuando la ruta esté lista
             rutaControl.on('routesfound', function(e) {
                 const routes = e.routes;
@@ -644,11 +743,11 @@
                 const tiempoMin = Math.round(summary.totalTime / 60);
                 mostrarNotificacion(`Ruta calculada: ${distanciaKm} km, ${tiempoMin} min`, 'success');
             });
-            
+
             rutaControl.on('routingerror', function(e) {
                 mostrarNotificacion('No se pudo calcular la ruta entre las ubicaciones', 'error');
             });
-            
+
             mostrarNotificacion('Ubicaciones encontradas en el mapa', 'success');
         })
         .catch(error => {
