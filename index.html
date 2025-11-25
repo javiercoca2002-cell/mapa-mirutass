@@ -374,12 +374,12 @@
 
     map.on('locationfound', function(e) {
       coordenadasUbicacion = [e.latitude, e.longitude];
-      
+
       // SOLO crear marcador si no hay uno existente y no se ha modificado manualmente
       if (!markerUbicacion && !origenModificado) {
         markerUbicacion = L.marker(e.latlng).addTo(map).bindPopup('Tu ubicación').openPopup();
       }
-      
+
       // Actualizar la ubicación del marcador existente si es la ubicación automática
       else if (markerUbicacion && !origenModificado) {
         markerUbicacion.setLatLng(e.latlng);
@@ -431,7 +431,7 @@
       origenModificado = false;
       if (rutaControl) { map.removeControl(rutaControl); rutaControl = null; }
       if (marcadorDestino) { map.removeLayer(marcadorDestino); marcadorDestino = null; }
-      
+
       // NO eliminar markerUbicacion aquí, solo permitir que se actualice con la ubicación
       if (markerUbicacion) {
         // Mantener el marcador pero permitir que se actualice con la ubicación automática
@@ -542,42 +542,64 @@
       return null;
     }
 
-    // MEJORA: Función mejorada con notificación detallada
-    function borrarRutaDesdeApp() {
-      if (rutaControl || markerUbicacion || marcadorDestino) {
-        let elementosEliminados = [];
+    // MEJORA: Función mejorada con notificación detallada - VERSIÓN CORREGIDA
+function borrarRutaDesdeApp() {
+  let elementosEliminados = [];
 
-        if (rutaControl) {
-          map.removeControl(rutaControl);
-          rutaControl = null;
-          elementosEliminados.push('ruta');
-        }
+  // 1. Eliminar ruta si existe
+  if (rutaControl) {
+    map.removeControl(rutaControl);
+    rutaControl = null;
+    elementosEliminados.push('ruta');
+  }
 
-        if (markerUbicacion) { 
-          map.removeLayer(markerUbicacion); 
-          markerUbicacion = null; 
-          elementosEliminados.push('origen');
-        }
+  // 2. Eliminar TODOS los marcadores de origen
+  if (markerUbicacion) { 
+    map.removeLayer(markerUbicacion); 
+    markerUbicacion = null; 
+    elementosEliminados.push('origen');
+  }
 
-        if (marcadorDestino) { 
-          map.removeLayer(marcadorDestino); 
-          marcadorDestino = null; 
-          elementosEliminados.push('destino');
-        }
+  // 3. Eliminar TODOS los marcadores de destino
+  if (marcadorDestino) { 
+    map.removeLayer(marcadorDestino); 
+    marcadorDestino = null; 
+    elementosEliminados.push('destino');
+  }
 
-        origenModificado = false;
+  // 4. Resetear estados y variables
+  origenModificado = false;
+  coordenadasUbicacion = null;
+  
+  // 5. Limpiar modos de selección activos
+  if (seleccionandoOrigen) {
+    seleccionandoOrigen = false;
+    document.getElementById('btn-origen').classList.remove('modo-activo');
+  }
+  
+  if (seleccionandoDestino) {
+    seleccionandoDestino = false;
+    document.getElementById('btn-destino').classList.remove('modo-activo');
+  }
+  
+  // 6. Ocultar marcador flotante
+  document.getElementById('marcador-centro').classList.remove('marcador-activo');
+  document.getElementById('marcador-centro').style.display = 'none';
 
-        // NUEVO: LIMPIAR LOS EDITTEXT EN LA APP ANDROID
-        if (window.Android && window.Android.limpiarDirecciones) {
-          window.Android.limpiarDirecciones();
-        }
+  // 7. Limpiar los EditText en la App Android
+  if (window.Android && window.Android.limpiarDirecciones) {
+    window.Android.limpiarDirecciones();
+  }
 
-        // MEJORA: Notificación mejorada
-        mostrarNotificacion('Ruta y marcadores eliminados correctamente', 'success');
-      } else {
-        mostrarNotificacion('No hay elementos para eliminar', 'info');
-      }
-    }
+  // 8. Mostrar notificación
+  if (elementosEliminados.length > 0) {
+    mostrarNotificacion('Ruta y todos los marcadores eliminados correctamente', 'success');
+  } else {
+    mostrarNotificacion('No había elementos para eliminar', 'info');
+  }
+  
+  console.log('Elementos eliminados:', elementosEliminados);
+}
 
     // FUNCIÓN: LIMPIAR SOLO EL MARCADOR DE ORIGEN
     function limpiarMarcadorOrigen() {
@@ -585,25 +607,25 @@
         map.removeLayer(markerUbicacion);
         markerUbicacion = null;
         origenModificado = false;
-        
+
         // Si hay ruta activa, quitarla
         if (rutaControl) {
           map.removeControl(rutaControl);
           rutaControl = null;
         }
-        
+
         // Limpiar selección si estaba activa
         if (seleccionandoOrigen) {
           seleccionandoOrigen = false;
           document.getElementById('btn-origen').classList.remove('modo-activo');
           document.getElementById('marcador-centro').classList.remove('marcador-activo');
         }
-        
+
         // Notificar a la app Android que se limpió el origen
         if (window.Android && window.Android.limpiarOrigen) {
           window.Android.limpiarOrigen();
         }
-        
+
         mostrarNotificacion('Origen eliminado', 'success');
       } else {
         mostrarNotificacion('No hay origen para eliminar', 'info');
@@ -615,25 +637,25 @@
       if (marcadorDestino) {
         map.removeLayer(marcadorDestino);
         marcadorDestino = null;
-        
+
         // Si hay ruta activa, quitarla
         if (rutaControl) {
           map.removeControl(rutaControl);
           rutaControl = null;
         }
-        
+
         // Limpiar selección si estaba activa
         if (seleccionandoDestino) {
           seleccionandoDestino = false;
           document.getElementById('btn-destino').classList.remove('modo-activo');
           document.getElementById('marcador-centro').classList.remove('marcador-activo');
         }
-        
+
         // Notificar a la app Android que se limpió el destino
         if (window.Android && window.Android.limpiarDestino) {
           window.Android.limpiarDestino();
         }
-        
+
         mostrarNotificacion('Destino eliminado', 'success');
       } else {
         mostrarNotificacion('No hay destino para eliminar', 'info');
@@ -644,13 +666,13 @@
     function limpiarDireccionesDesdeAndroid() {
       limpiarMarcadorOrigen();
       limpiarMarcadorDestino();
-      
+
       // También limpiar ubicación si es necesario
       if (markerUbicacion) {
         map.removeLayer(markerUbicacion);
         markerUbicacion = null;
       }
-      
+
       mostrarNotificacion('Direcciones limpiadas', 'success');
     }
 
