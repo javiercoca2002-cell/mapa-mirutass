@@ -24,7 +24,7 @@
       position: fixed; top: 0; left: 0; width: 100%; height: 100%;
       background: linear-gradient(135deg, #667eea, #764ba2);
       display: flex; flex-direction: column; justify-content: center; align-items: center;
-      z-index: 9999; transition: opacity 0.6s;
+      z-index: 9999; transition: opacity 0.6s ease;
     }
     .spinner { width: 60px; height: 60px; border: 6px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px; }
     @keyframes spin { to { transform: rotate(360deg); } }
@@ -53,7 +53,7 @@
       background: rgba(0,0,0,0.92); color: white; padding: 14px 28px; border-radius: 16px;
       font-size: 15px; z-index: 3000; backdrop-filter: blur(20px);
       border: 1px solid rgba(255,255,255,0.2); box-shadow: 0 10px 30px rgba(0,0,0,0.4);
-      opacity: 0; transition: all 0.4s;
+      opacity: 0; transition: all 0.4s ease;
     }
     #notif.show { transform: translateX(-50%) translateY(0); opacity: 1; }
   </style>
@@ -99,12 +99,12 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.min.js"></script>
   <script>
-    // Iconos bonitos
+    // Iconos diferenciados
     const iconOrigen  = L.icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png', shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png', iconSize: [25,41], iconAnchor: [12,41] });
     const iconDestino = L.icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png', iconSize: [25,41], iconAnchor: [12,41] });
     const iconAqui    = L.icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png',  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png', iconSize: [25,41], iconAnchor: [12,41] });
 
-    let map, rutaControl = null, marcadorOrigen = null, marcadorDestino = null, markerUbicacion = null;
+    let map = null, rutaControl = null, marcadorOrigen = null, marcadorDestino = null, markerUbicacion = null;
     let coordenadasUbicacion = null, origenModificado = false;
 
     function notificar(texto, tipo = 'info') {
@@ -115,22 +115,22 @@
       setTimeout(() => n.classList.remove('show'), 3000);
     }
 
-    // === MAPA ===
+    // === INICIALIZACIÓN DEL MAPA ===
     map = L.map('map', { zoomControl: false }).setView([21.9276, -79.4432], 14);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
     L.control.zoom({ position: 'topright' }).addTo(map);
 
-    map.whenReady(() => {
+    // Quitar loading cuando todo esté listo
+    window.addEventListener('load', () => {
       setTimeout(() => {
         document.getElementById('loading').style.opacity = '0';
         setTimeout(() => document.getElementById('loading').style.display = 'none', 600);
-      }, 900);
-      detectarUbicacion();
+      }, 800);
     });
 
-    // === GEOLOCALIZACIÓN (AHORA SÍ FUNCIONA PERFECTO) ===
+    // === GEOLOCALIZACIÓN ===
     function detectarUbicacion() {
-      map.locate({ setView: true, maxZoom: 16, enableHighAccuracy: true });
+      map.locate({ setView: true, maxZoom: 16, enableHighAccuracy: true, timeout: 15000 });
     }
 
     map.on('locationfound', e => {
@@ -141,25 +141,20 @@
       markerUbicacion = L.marker(e.latlng, { icon: iconAqui }).addTo(map)
         .bindPopup('Estás aquí').openPopup();
 
-      // Origen automático (solo si no lo ha cambiado el usuario)
+      // Origen automático
       if (!marcadorOrigen && !origenModificado) {
         if (marcadorOrigen) map.removeLayer(marcadorOrigen);
         marcadorOrigen = L.marker(e.latlng, { icon: iconOrigen }).addTo(map)
           .bindPopup('Origen automático').openPopup();
       }
 
-      // === ENVÍO CORRECTO DE DIRECCIÓN A ANDROID ===
+      // Dirección real al EditText
       fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=\( {e.latitude}&lon= \){e.longitude}&accept-language=es`)
         .then(r => r.json())
         .then(data => {
-          const direccion = data?.display_name || "Ubicación actual";
+          const direccion = data?.display_name || "Mi ubicación actual";
           if (!origenModificado && window.Android?.setOrigen) {
             window.Android.setOrigen(direccion);
-          }
-        })
-        .catch(() => {
-          if (!origenModificado && window.Android?.setOrigen) {
-            window.Android.setOrigen("Mi ubicación actual");
           }
         });
     });
@@ -178,7 +173,6 @@
         btn.classList.remove('modo-activo');
         centro.style.display = 'none';
         confirmarMarcador('origen');
-        // Al confirmar origen manual → quitamos el marcador azul
         if (markerUbicacion) { map.removeLayer(markerUbicacion); markerUbicacion = null; }
       }
     }
@@ -199,12 +193,10 @@
 
     function confirmarMarcador(tipo) {
       const centro = map.getCenter();
-
       fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=\( {centro.lat}&lon= \){centro.lng}&accept-language=es`)
         .then(r => r.json())
         .then(data => {
-          const direccion = data?.display_name || "Dirección seleccionada";
-
+          const direccion = data?.display_name || "Punto seleccionado";
           if (tipo === 'origen') {
             origenModificado = true;
             if (marcadorOrigen) map.removeLayer(marcadorOrigen);
@@ -216,20 +208,6 @@
             marcadorDestino = L.marker(centro, { icon: iconDestino }).addTo(map).bindPopup('Destino').openPopup();
             if (window.Android?.setDestino) window.Android.setDestino(direccion);
             notificar('Destino establecido', 'success');
-          }
-          trazarRuta();
-        })
-        .catch(() => {
-          const fallback = tipo === 'origen' ? "Origen manual" : "Destino manual";
-          if (tipo === 'origen') {
-            origenModificado = true;
-            if (marcadorOrigen) map.removeLayer(marcadorOrigen);
-            marcadorOrigen = L.marker(centro, { icon: iconOrigen }).addTo(map);
-            if (window.Android?.setOrigen) window.Android.setOrigen(fallback);
-          } else {
-            if (marcadorDestino) map.removeLayer(marcadorDestino);
-            marcadorDestino = L.marker(centro, { icon: iconDestino }).addTo(map);
-            if (window.Android?.setDestino) window.Android.setDestino(fallback);
           }
           trazarRuta();
         });
@@ -271,9 +249,7 @@
       if (marcadorDestino) { map.removeLayer(marcadorDestino); marcadorDestino = null; borrado = true; }
       if (markerUbicacion) { map.removeLayer(markerUbicacion); markerUbicacion = null; }
       origenModificado = false;
-
       if (window.Android?.limpiarDirecciones) window.Android.limpiarDirecciones();
-
       notificar(borrado ? 'Ruta eliminada' : 'Nada que borrar', borrado ? 'success' : 'info');
     }
 
@@ -281,9 +257,9 @@
       borrarRutaDesdeApp();
       origenModificado = false;
       detectarUbicacion();
-      notificar('Buscando tu ubicación...', 'info');
     }
 
+    // INICIAR
     detectarUbicacion();
   </script>
 </body>
