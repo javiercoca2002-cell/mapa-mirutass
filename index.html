@@ -31,7 +31,7 @@
       display: none;
     }
     
-    /* Layout transparente inferior */
+    /* Layout transparente inferior - MÁS COMPACTO */
     #botones-layout {
       position: absolute;
       bottom: 20px;
@@ -39,14 +39,15 @@
       transform: translateX(-50%);
       z-index: 1000;
       background: rgba(0,0,0,0.7);
-      padding: 16px 24px;
-      border-radius: 20px;
+      padding: 12px 16px; /* Reducido */
+      border-radius: 18px; /* Ligeramente más pequeño */
       display: flex;
       flex-direction: row;
-      gap: 24px;
+      gap: 16px; /* Reducido el espacio entre botones */
       box-shadow: 0 6px 20px rgba(0,0,0,0.4);
       backdrop-filter: blur(10px);
       border: 1px solid rgba(255,255,255,0.1);
+      max-width: 90%; /* Asegura que no sobrepase los bordes */
     }
     
     /* Contenedor para cada botón con su etiqueta */
@@ -54,7 +55,7 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 8px;
+      gap: 6px; /* Reducido */
       transition: transform 0.2s ease;
     }
     
@@ -62,10 +63,10 @@
       transform: translateY(-3px);
     }
     
-    /* Botones circulares */
+    /* Botones circulares - MÁS PEQUEÑOS */
     .boton-mapa {
-      width: 60px;
-      height: 60px;
+      width: 50px; /* Reducido de 60px */
+      height: 50px; /* Reducido de 60px */
       border-radius: 50%;
       background: linear-gradient(135deg, #6764FD, #4b48c9);
       color: white;
@@ -100,10 +101,10 @@
       transform: scale(1.05);
     }
     
-    /* Iconos SVG */
+    /* Iconos SVG - MÁS PEQUEÑOS */
     .icono-boton {
-      width: 26px;
-      height: 26px;
+      width: 22px; /* Reducido de 26px */
+      height: 22px; /* Reducido de 26px */
       fill: white;
       filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));
       transition: transform 0.2s ease;
@@ -116,7 +117,7 @@
     /* Etiquetas de texto debajo de los botones */
     .etiqueta-boton {
       color: white;
-      font-size: 13px;
+      font-size: 12px; /* Ligeramente más pequeño */
       font-weight: 500;
       text-shadow: 0 1px 2px rgba(0,0,0,0.5);
       white-space: nowrap;
@@ -144,7 +145,7 @@
   <div id="map"></div>
   <div id="marcador-centro"></div>
 
-  <!-- Layout transparente con los botones -->
+  <!-- Layout transparente con los botones - MÁS COMPACTO -->
   <div id="botones-layout">
     <div class="boton-contenedor">
       <button id="btn-origen" onclick="toggleOrigen()" class="boton-mapa" title="Fijar origen">
