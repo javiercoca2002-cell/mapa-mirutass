@@ -1,265 +1,372 @@
 <!DOCTYPE html>
-<html lang="es">
+<html>
 <head>
   <meta charset="utf-8" />
-  <title>Mapa MiRutaSS - Navegación Inteligente</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
+  <title>Mapa MiRutaSS</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
   <style>
-    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-    html, body, #map { height: 100%; margin: 0; padding: 0; overflow: hidden; font-family: 'Segoe UI', system-ui, sans-serif; }
+    html, body, #map { 
+      height: 100%; 
+      margin: 0; 
+      padding: 0; 
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
 
     #marcador-centro {
-      position: absolute; top: 50%; left: 50%; width: 28px; height: 28px;
-      margin-left: -14px; margin-top: -14px; background: #6764FD;
-      border: 4px solid white; border-radius: 50%;
-      box-shadow: 0 0 25px rgba(103,100,253,0.9); z-index: 999;
-      pointer-events: none; display: none;
-      animation: pulse 1.6s infinite;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 20px;
+      height: 20px;
+      margin-left: -10px;
+      margin-top: -10px;
+      border-radius: 50%;
+      background: #6764FD;
+      border: 2px solid white;
+      box-shadow: 0 0 10px #6764FD;
+      z-index: 999;
+      pointer-events: none;
+      display: none;
     }
-    @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.35); } }
 
-    #loading {
-      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-      background: linear-gradient(135deg, #667eea, #764ba2);
-      display: flex; flex-direction: column; justify-content: center; align-items: center;
-      z-index: 9999; transition: opacity 0.6s ease;
-    }
-    .spinner { width: 60px; height: 60px; border: 6px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
+    /* Layout transparente inferior - MÁS COMPACTO */
     #botones-layout {
-      position: absolute; bottom: 24px; left: 50%; transform: translateX(-50%);
-      background: rgba(0,0,0,0.88); padding: 16px 24px; border-radius: 30px;
-      display: flex; gap: 22px; z-index: 1000; box-shadow: 0 12px 40px rgba(0,0,0,0.5);
-      backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.18);
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 1000;
+      background: rgba(0,0,0,0.7);
+      padding: 12px 16px;
+      border-radius: 18px;
+      display: flex;
+      flex-direction: row;
+      gap: 16px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.1);
+      max-width: 90%;
     }
-    .boton-contenedor { display: flex; flex-direction: column; align-items: center; gap: 8px; }
-    .boton-mapa {
-      width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, #6764FD, #4b48c9);
-      border: none; color: white; cursor: pointer; box-shadow: 0 8px 25px rgba(103,100,253,0.5);
-      transition: all 0.3s ease;
-    }
-    .boton-mapa:hover { transform: scale(1.18); box-shadow: 0 12px 35px rgba(103,100,253,0.7); }
-    .boton-mapa:active { transform: scale(1.08); }
-    .icono-boton { width: 28px; height: 28px; fill: white; }
-    .etiqueta-boton { color: white; font-size: 12px; font-weight: 600; text-shadow: 0 1px 3px black; }
-    .modo-activo { box-shadow: 0 0 0 5px rgba(255,255,255,0.9), 0 12px 35px rgba(103,100,253,0.9) !important; animation: glow 2s infinite; }
-    @keyframes glow { 0%,100% { box-shadow: 0 0 0 5px rgba(255,255,255,0.9), 0 12px 35px rgba(103,100,253,0.9); } 50% { box-shadow: 0 0 0 10px rgba(255,255,255,0.6), 0 12px 35px rgba(103,100,253,1); } }
 
-    #notif {
-      position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-100px);
-      background: rgba(0,0,0,0.92); color: white; padding: 14px 28px; border-radius: 16px;
-      font-size: 15px; z-index: 3000; backdrop-filter: blur(20px);
-      border: 1px solid rgba(255,255,255,0.2); box-shadow: 0 10px 30px rgba(0,0,0,0.4);
-      opacity: 0; transition: all 0.4s ease;
+    /* Contenedor para cada botón con su etiqueta */
+    .boton-contenedor {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      transition: transform 0.2s ease;
     }
-    #notif.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+    .boton-contenedor:hover {
+      transform: translateY(-3px);
+    }
+
+    /* Botones circulares - MÁS PEQUEÑOS */
+    .boton-mapa {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #6764FD, #4b48c9);
+      color: white;
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .boton-mapa::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, rgba(255,255,255,0.2), transparent);
+      border-radius: 50%;
+    }
+
+    .boton-mapa:hover {
+      transform: scale(1.1);
+      box-shadow: 0 6px 16px rgba(103, 100, 253, 0.5);
+    }
+
+    .boton-mapa:active {
+      transform: scale(1.05);
+    }
+
+    /* Iconos SVG - MÁS PEQUEÑOS */
+    .icono-boton {
+      width: 22px;
+      height: 22px;
+      fill: white;
+      filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));
+      transition: transform 0.2s ease;
+    }
+
+    .boton-mapa:hover .icono-boton {
+      transform: scale(1.1);
+    }
+
+    /* Etiquetas de texto debajo de los botones */
+    .etiqueta-boton {
+      color: white;
+      font-size: 12px;
+      font-weight: 500;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+      white-space: nowrap;
+      letter-spacing: 0.3px;
+    }
+
+    /* Indicador de modo activo */
+    .modo-activo {
+      box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.8), 0 6px 16px rgba(103, 100, 253, 0.6);
+    }
+
+    /* Animación para el marcador de centro */
+    @keyframes pulse {
+      0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+      50% { transform: translate(-50%, -50%) scale(1.2); opacity: 0.7; }
+      100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+    }
+
+    .marcador-activo {
+      animation: pulse 1.5s infinite;
+    }
   </style>
 </head>
 <body>
-
-  <div id="loading">
-    <div class="spinner"></div>
-    <div style="color:white;font-size:18px;font-weight:600;">Cargando MiRutaSS...</div>
-  </div>
-
-  <div id="notif"></div>
   <div id="map"></div>
   <div id="marcador-centro"></div>
 
+  <!-- Layout transparente con los botones - MÁS COMPACTO -->
   <div id="botones-layout">
     <div class="boton-contenedor">
       <button id="btn-origen" onclick="toggleOrigen()" class="boton-mapa" title="Fijar origen">
-        <svg class="icono-boton" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+        <svg class="icono-boton" viewBox="0 0 24 24">
+          <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+        </svg>
       </button>
       <span class="etiqueta-boton">Origen</span>
     </div>
     <div class="boton-contenedor">
       <button id="btn-destino" onclick="toggleDestino()" class="boton-mapa" title="Fijar destino">
-        <svg class="icono-boton" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm-1 11.5v-6h2v6h-2z"/><circle cx="12" cy="9" r="1.5"/></svg>
+        <svg class="icono-boton" viewBox="0 0 24 24">
+          <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm-1 11.5v-6h2v6h-2z"/>
+          <circle cx="12" cy="9" r="1.5"/>
+        </svg>
       </button>
       <span class="etiqueta-boton">Destino</span>
     </div>
     <div class="boton-contenedor">
       <button onclick="borrarRutaDesdeApp()" class="boton-mapa" title="Borrar ruta">
-        <svg class="icono-boton" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+        <svg class="icono-boton" viewBox="0 0 24 24">
+          <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+        </svg>
       </button>
       <span class="etiqueta-boton">Borrar ruta</span>
     </div>
     <div class="boton-contenedor">
-      <button onclick="restaurarUbicacion()" class="boton-mapa" title="Mi ubicación">
-        <svg class="icono-boton" viewBox="0 0 24 24"><path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3c-.46-4.17-3.77-7.48-7.94-7.94V1h-2v2.06C6.83 3.52 3.52 6.83 3.06 11H1v2h2.06c.46 4.17 3.77 7.48 7.94 7.94V23h2v-2.06c4.17-.46 7.48-3.77 7.94-7.94H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/></svg>
+      <button onclick="restaurarUbicacion()" class="boton-mapa" title="Restaurar ubicación">
+        <svg class="icono-boton" viewBox="0 0 24 24">
+          <path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3c-.46-4.17-3.77-7.48-7.94-7.94V1h-2v2.06C6.83 3.52 3.52 6.83 3.06 11H1v2h2.06c.46 4.17 3.77 7.48 7.94 7.94V23h2v-2.06c4.17-.46 7.48-3.77 7.94-7.94H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/>
+        </svg>
       </button>
       <span class="etiqueta-boton">Localización</span>
     </div>
   </div>
 
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.min.js"></script>
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.min.js"></script>
   <script>
-    // Iconos diferenciados
-    const iconOrigen  = L.icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png', shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png', iconSize: [25,41], iconAnchor: [12,41] });
-    const iconDestino = L.icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png', iconSize: [25,41], iconAnchor: [12,41] });
-    const iconAqui    = L.icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png',  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png', iconSize: [25,41], iconAnchor: [12,41] });
+    var map = L.map('map').setView([21.9276, -79.4432], 14);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 18,
+      attribution: '© OpenStreetMap'
+    }).addTo(map);
 
-    let map = null, rutaControl = null, marcadorOrigen = null, marcadorDestino = null, markerUbicacion = null;
-    let coordenadasUbicacion = null, origenModificado = false;
+    var rutaControl = null;
+    var markerUbicacion = null;
+    var marcadorOrigen = null;
+    var marcadorDestino = null;
+    var direccionDetectada = "";
+    var coordenadasUbicacion = null;
+    var origenModificado = false;
+    var modoSeleccion = null;
+    var seleccionandoOrigen = false;
+    var seleccionandoDestino = false;
 
-    function notificar(texto, tipo = 'info') {
-      const n = document.getElementById('notif');
-      n.textContent = texto;
-      n.style.background = tipo === 'error' ? '#e74c3c' : tipo === 'success' ? '#27ae60' : 'rgba(0,0,0,0.92)';
-      n.classList.add('show');
-      setTimeout(() => n.classList.remove('show'), 3000);
-    }
-
-    // === INICIALIZACIÓN DEL MAPA ===
-    map = L.map('map', { zoomControl: false }).setView([21.9276, -79.4432], 14);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
-    L.control.zoom({ position: 'topright' }).addTo(map);
-
-    // Quitar loading cuando todo esté listo
-    window.addEventListener('load', () => {
-      setTimeout(() => {
-        document.getElementById('loading').style.opacity = '0';
-        setTimeout(() => document.getElementById('loading').style.display = 'none', 600);
-      }, 800);
-    });
-
-    // === GEOLOCALIZACIÓN ===
-    function detectarUbicacion() {
-      map.locate({ setView: true, maxZoom: 16, enableHighAccuracy: true, timeout: 15000 });
-    }
-
-    map.on('locationfound', e => {
-      coordenadasUbicacion = [e.latitude, e.longitude];
-
-      // Marcador azul "Estás aquí"
-      if (markerUbicacion) map.removeLayer(markerUbicacion);
-      markerUbicacion = L.marker(e.latlng, { icon: iconAqui }).addTo(map)
-        .bindPopup('Estás aquí').openPopup();
-
-      // Origen automático
-      if (!marcadorOrigen && !origenModificado) {
-        if (marcadorOrigen) map.removeLayer(marcadorOrigen);
-        marcadorOrigen = L.marker(e.latlng, { icon: iconOrigen }).addTo(map)
-          .bindPopup('Origen automático').openPopup();
-      }
-
-      // Dirección real al EditText
-      fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=\( {e.latitude}&lon= \){e.longitude}&accept-language=es`)
-        .then(r => r.json())
-        .then(data => {
-          const direccion = data?.display_name || "Mi ubicación actual";
-          if (!origenModificado && window.Android?.setOrigen) {
-            window.Android.setOrigen(direccion);
-          }
-        });
-    });
-
-    map.on('locationerror', () => notificar('No se pudo obtener tu ubicación', 'error'));
-
-    // === TOGGLE ORIGEN / DESTINO ===
     function toggleOrigen() {
-      const btn = document.getElementById('btn-origen');
-      const centro = document.getElementById('marcador-centro');
-      if (!btn.classList.contains('modo-activo')) {
-        btn.classList.add('modo-activo');
-        centro.style.display = 'block';
-        notificar('Mueve el mapa y pulsa Origen para confirmar');
+      if (!seleccionandoOrigen) {
+        seleccionandoOrigen = true;
+        seleccionandoDestino = false;
+        document.getElementById('btn-origen').classList.add('modo-activo');
+        document.getElementById('marcador-centro').classList.add('marcador-activo');
+        activarMarcadorFlotante('origen');
       } else {
-        btn.classList.remove('modo-activo');
-        centro.style.display = 'none';
-        confirmarMarcador('origen');
-        if (markerUbicacion) { map.removeLayer(markerUbicacion); markerUbicacion = null; }
+        seleccionandoOrigen = false;
+        document.getElementById('btn-origen').classList.remove('modo-activo');
+        document.getElementById('marcador-centro').classList.remove('marcador-activo');
+        confirmarMarcadorFlotante('origen');
+        eliminarUbicacion();
       }
     }
 
     function toggleDestino() {
-      const btn = document.getElementById('btn-destino');
-      const centro = document.getElementById('marcador-centro');
-      if (!btn.classList.contains('modo-activo')) {
-        btn.classList.add('modo-activo');
-        centro.style.display = 'block';
-        notificar('Mueve el mapa y pulsa Destino para confirmar');
+      if (!seleccionandoDestino) {
+        seleccionandoDestino = true;
+        seleccionandoOrigen = false;
+        document.getElementById('btn-destino').classList.add('modo-activo');
+        document.getElementById('marcador-centro').classList.add('marcador-activo');
+        activarMarcadorFlotante('destino');
       } else {
-        btn.classList.remove('modo-activo');
-        centro.style.display = 'none';
-        confirmarMarcador('destino');
+        seleccionandoDestino = false;
+        document.getElementById('btn-destino').classList.remove('modo-activo');
+        document.getElementById('marcador-centro').classList.remove('marcador-activo');
+        confirmarMarcadorFlotante('destino');
       }
     }
 
-    function confirmarMarcador(tipo) {
-      const centro = map.getCenter();
-      fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=\( {centro.lat}&lon= \){centro.lng}&accept-language=es`)
-        .then(r => r.json())
+    function detectarUbicacion() {
+      map.locate({ setView: true, maxZoom: 16 });
+    }
+
+    map.on('locationfound', function(e) {
+      coordenadasUbicacion = [e.latitude, e.longitude];
+      if (markerUbicacion) map.removeLayer(markerUbicacion);
+      markerUbicacion = L.marker(e.latlng).addTo(map).bindPopup('Tu ubicación').openPopup();
+
+      // CREAR MARCADOR DE ORIGEN AUTOMÁTICAMENTE CON LA GEOLOCALIZACIÓN
+      if (!marcadorOrigen && !origenModificado) {
+        marcadorOrigen = L.marker(e.latlng).addTo(map).bindPopup('Origen automático');
+      }
+
+      fetch('https://nominatim.openstreetmap.org/reverse?format=json&lat=' + e.latitude + '&lon=' + e.longitude)
+        .then(res => res.json())
         .then(data => {
-          const direccion = data?.display_name || "Punto seleccionado";
-          if (tipo === 'origen') {
-            origenModificado = true;
-            if (marcadorOrigen) map.removeLayer(marcadorOrigen);
-            marcadorOrigen = L.marker(centro, { icon: iconOrigen }).addTo(map).bindPopup('Origen').openPopup();
-            if (window.Android?.setOrigen) window.Android.setOrigen(direccion);
-            notificar('Origen establecido', 'success');
-          } else {
-            if (marcadorDestino) map.removeLayer(marcadorDestino);
-            marcadorDestino = L.marker(centro, { icon: iconDestino }).addTo(map).bindPopup('Destino').openPopup();
-            if (window.Android?.setDestino) window.Android.setDestino(direccion);
-            notificar('Destino establecido', 'success');
+          if (data && data.display_name) {
+            direccionDetectada = data.display_name;
+            if (!origenModificado && window.Android && window.Android.setOrigen) {
+              window.Android.setOrigen(direccionDetectada);
+            }
           }
-          trazarRuta();
         });
-    }
+    });
 
-    function obtenerOrigen() {
-      return marcadorOrigen?.getLatLng() || (!origenModificado && coordenadasUbicacion ? L.latLng(coordenadasUbicacion) : null);
-    }
+    map.on('locationerror', function() {
+      alert('No se pudo obtener tu ubicación');
+    });
 
-    function trazarRuta() {
-      const origen = obtenerOrigen();
-      const destino = marcadorDestino?.getLatLng();
-      if (!origen || !destino) return;
-
-      if (rutaControl) map.removeControl(rutaControl);
-      notificar('Calculando ruta...');
-
-      rutaControl = L.Routing.control({
-        waypoints: [origen, destino],
-        lineOptions: { styles: [{ color: '#6764FD', weight: 6, opacity: 0.9 }] },
-        createMarker: () => null,
-        addWaypoints: false,
-        routeWhileDragging: false,
-        show: false,
-        fitSelectedRoutes: true
-      }).addTo(map);
-
-      rutaControl.on('routesfound', e => {
-        const km = (e.routes[0].summary.totalDistance / 1000).toFixed(1);
-        const min = Math.round(e.routes[0].summary.totalTime / 60);
-        notificar(`\( {km} km • \){min} min`, 'success');
-      });
-    }
-
-    function borrarRutaDesdeApp() {
-      let borrado = false;
-      if (rutaControl) { map.removeControl(rutaControl); rutaControl = null; borrado = true; }
-      if (marcadorOrigen) { map.removeLayer(marcadorOrigen); marcadorOrigen = null; borrado = true; }
-      if (marcadorDestino) { map.removeLayer(marcadorDestino); marcadorDestino = null; borrado = true; }
-      if (markerUbicacion) { map.removeLayer(markerUbicacion); markerUbicacion = null; }
-      origenModificado = false;
-      if (window.Android?.limpiarDirecciones) window.Android.limpiarDirecciones();
-      notificar(borrado ? 'Ruta eliminada' : 'Nada que borrar', borrado ? 'success' : 'info');
+    function eliminarUbicacion() {
+      origenModificado = true;
+      if (markerUbicacion) {
+        map.removeLayer(markerUbicacion);
+        markerUbicacion = null;
+      }
     }
 
     function restaurarUbicacion() {
-      borrarRutaDesdeApp();
       origenModificado = false;
+      if (rutaControl) { map.removeControl(rutaControl); rutaControl = null; }
+      if (marcadorOrigen) { map.removeLayer(marcadorOrigen); marcadorOrigen = null; }
+      if (marcadorDestino) { map.removeLayer(marcadorDestino); marcadorDestino = null; }
       detectarUbicacion();
     }
 
-    // INICIAR
+    function activarMarcadorFlotante(tipo) {
+      modoSeleccion = tipo;
+      document.getElementById("marcador-centro").style.display = "block";
+    }
+
+    function confirmarMarcadorFlotante(tipo) {
+      var coords = map.getCenter();
+      document.getElementById("marcador-centro").style.display = "none";
+      fetch('https://nominatim.openstreetmap.org/reverse?format=json&lat=' + coords.lat + '&lon=' + coords.lng)
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.display_name) {
+            var direccion = data.display_name;
+            if (tipo === 'origen') {
+              if (marcadorOrigen) map.removeLayer(marcadorOrigen);
+              marcadorOrigen = L.marker(coords).addTo(map).bindPopup('Origen').openPopup();
+              if (window.Android && window.Android.setOrigen) window.Android.setOrigen(direccion);
+            } else if (tipo === 'destino') {
+              if (marcadorDestino) map.removeLayer(marcadorDestino);
+              marcadorDestino = L.marker(coords).addTo(map).bindPopup('Destino').openPopup();
+              if (window.Android && window.Android.setDestino) window.Android.setDestino(direccion);
+            }
+
+            // CREAR RUTA AUTOMÁTICAMENTE SI HAY ORIGEN Y DESTINO
+            crearRutaSiEsNecesario();
+            modoSeleccion = null;
+          }
+        });
+    }
+
+    // FUNCIÓN: CREAR RUTA AUTOMÁTICAMENTE
+    function crearRutaSiEsNecesario() {
+      var origen = obtenerOrigenActual();
+      var destino = marcadorDestino ? marcadorDestino.getLatLng() : null;
+
+      if (origen && destino) {
+        if (rutaControl) map.removeControl(rutaControl);
+        rutaControl = L.Routing.control({
+          waypoints: [origen, destino],
+          lineOptions: { styles: [{ color: '#6764FD', weight: 5 }] },
+          createMarker: () => null,
+          addWaypoints: false,
+          routeWhileDragging: false
+        }).addTo(map);
+      }
+    }
+
+    // FUNCIÓN: OBTENER ORIGEN ACTUAL (AUTOMÁTICO O MANUAL)
+    function obtenerOrigenActual() {
+      if (marcadorOrigen) {
+        return marcadorOrigen.getLatLng();
+      } else if (coordenadasUbicacion && !origenModificado) {
+        return L.latLng(coordenadasUbicacion[0], coordenadasUbicacion[1]);
+      }
+      return null;
+    }
+
+    // FUNCIÓN MEJORADA: BORRAR RUTA Y LIMPIAR EDITTEXT EN ANDROID
+    function borrarRutaDesdeApp() {
+      if (rutaControl || marcadorOrigen || marcadorDestino) {
+        if (rutaControl) {
+          map.removeControl(rutaControl);
+          rutaControl = null;
+        }
+        // ELIMINAR SIEMPRE EL MARCADOR DE ORIGEN, SIN IMPORTAR SI ES AUTOMÁTICO O MANUAL
+        if (marcadorOrigen) { 
+          map.removeLayer(marcadorOrigen); 
+          marcadorOrigen = null; 
+        }
+        if (marcadorDestino) { 
+          map.removeLayer(marcadorDestino); 
+          marcadorDestino = null; 
+        }
+        // RESETEAR EL ESTADO DE ORIGEN MODIFICADO
+        origenModificado = false;
+
+        // NUEVO: LIMPIAR LOS EDITTEXT EN LA APP ANDROID
+        if (window.Android && window.Android.limpiarDirecciones) {
+          window.Android.limpiarDirecciones();
+        }
+
+        alert("Ruta eliminada correctamente");
+      } else {
+        alert("No existe una ruta definitiva que borrar.");
+      }
+    }
+
+    // Inicializar la ubicación al cargar la página
     detectarUbicacion();
   </script>
 </body>
