@@ -342,6 +342,7 @@
           map.removeControl(rutaControl);
           rutaControl = null;
         }
+        // CORRECCIÓN: ELIMINAR SIEMPRE EL MARCADOR DE ORIGEN, SIN IMPORTAR SI ES AUTOMÁTICO O MANUAL
         if (marcadorOrigen) { 
           map.removeLayer(marcadorOrigen); 
           marcadorOrigen = null; 
@@ -350,6 +351,8 @@
           map.removeLayer(marcadorDestino); 
           marcadorDestino = null; 
         }
+        // CORRECCIÓN: RESETEAR EL ESTADO DE ORIGEN MODIFICADO
+        origenModificado = false;
         alert("Ruta eliminada correctamente");
       } else {
         alert("No existe una ruta definitiva que borrar.");
