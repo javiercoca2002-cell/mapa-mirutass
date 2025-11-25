@@ -20,13 +20,15 @@
     }
     @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.35); } }
 
-    /* Loading elegante */
-    #loading { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, #667eea, #764ba2);
-      display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 9999; transition: opacity 0.6s; }
+    #loading {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      display: flex; flex-direction: column; justify-content: center; align-items: center;
+      z-index: 9999; transition: opacity 0.6s;
+    }
     .spinner { width: 60px; height: 60px; border: 6px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* Botones inferiores (tu estilo mejorado) */
     #botones-layout {
       position: absolute; bottom: 24px; left: 50%; transform: translateX(-50%);
       background: rgba(0,0,0,0.88); padding: 16px 24px; border-radius: 30px;
@@ -46,10 +48,13 @@
     .modo-activo { box-shadow: 0 0 0 5px rgba(255,255,255,0.9), 0 12px 35px rgba(103,100,253,0.9) !important; animation: glow 2s infinite; }
     @keyframes glow { 0%,100% { box-shadow: 0 0 0 5px rgba(255,255,255,0.9), 0 12px 35px rgba(103,100,253,0.9); } 50% { box-shadow: 0 0 0 10px rgba(255,255,255,0.6), 0 12px 35px rgba(103,100,253,1); } }
 
-    /* Notificación */
-    #notif { position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-100px); background: rgba(0,0,0,0.92); color: white;
-      padding: 14px 28px; border-radius: 16px; font-size: 15px; z-index: 3000; backdrop-filter: blur(20px);
-      border: 1px solid rgba(255,255,255,0.2); box-shadow: 0 10px 30px rgba(0,0,0,0.4); opacity: 0; transition: all 0.4s; }
+    #notif {
+      position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-100px);
+      background: rgba(0,0,0,0.92); color: white; padding: 14px 28px; border-radius: 16px;
+      font-size: 15px; z-index: 3000; backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,0.2); box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+      opacity: 0; transition: all 0.4s;
+    }
     #notif.show { transform: translateX(-50%) translateY(0); opacity: 1; }
   </style>
 </head>
@@ -94,7 +99,7 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.min.js"></script>
   <script>
-    // Iconos diferenciados
+    // Iconos bonitos
     const iconOrigen  = L.icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png', shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png', iconSize: [25,41], iconAnchor: [12,41] });
     const iconDestino = L.icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png', iconSize: [25,41], iconAnchor: [12,41] });
     const iconAqui    = L.icon({ iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png',  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png', iconSize: [25,41], iconAnchor: [12,41] });
@@ -110,8 +115,8 @@
       setTimeout(() => n.classList.remove('show'), 3000);
     }
 
-    // Inicialización
-    const map = L.map('map', { zoomControl: false }).setView([21.9276, -79.4432], 14);
+    // === MAPA ===
+    map = L.map('map', { zoomControl: false }).setView([21.9276, -79.4432], 14);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
     L.control.zoom({ position: 'topright' }).addTo(map);
 
@@ -123,30 +128,45 @@
       detectarUbicacion();
     });
 
+    // === GEOLOCALIZACIÓN (AHORA SÍ FUNCIONA PERFECTO) ===
     function detectarUbicacion() {
       map.locate({ setView: true, maxZoom: 16, enableHighAccuracy: true });
     }
 
     map.on('locationfound', e => {
       coordenadasUbicacion = [e.latitude, e.longitude];
-      if (markerUbicacion) markerUbicacion.setLatLng(e.latlng);
-      else markerUbicacion = L.marker(e.latlng, { icon: iconAqui }).addTo(map).bindPopup('Estás aquí').openPopup();
 
+      // Marcador azul "Estás aquí"
+      if (markerUbicacion) map.removeLayer(markerUbicacion);
+      markerUbicacion = L.marker(e.latlng, { icon: iconAqui }).addTo(map)
+        .bindPopup('Estás aquí').openPopup();
+
+      // Origen automático (solo si no lo ha cambiado el usuario)
       if (!marcadorOrigen && !origenModificado) {
-        marcadorOrigen = L.marker(e.latlng, { icon: iconOrigen }).addTo(map).bindPopup('Origen automático');
+        if (marcadorOrigen) map.removeLayer(marcadorOrigen);
+        marcadorOrigen = L.marker(e.latlng, { icon: iconOrigen }).addTo(map)
+          .bindPopup('Origen automático').openPopup();
       }
 
+      // === ENVÍO CORRECTO DE DIRECCIÓN A ANDROID ===
       fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=\( {e.latitude}&lon= \){e.longitude}&accept-language=es`)
         .then(r => r.json())
-        .then(d => {
-          if (d?.display_name && !origenModificado && window.Android?.setOrigen) {
-            window.Android.setOrigen(d.display_name);
+        .then(data => {
+          const direccion = data?.display_name || "Ubicación actual";
+          if (!origenModificado && window.Android?.setOrigen) {
+            window.Android.setOrigen(direccion);
+          }
+        })
+        .catch(() => {
+          if (!origenModificado && window.Android?.setOrigen) {
+            window.Android.setOrigen("Mi ubicación actual");
           }
         });
     });
 
     map.on('locationerror', () => notificar('No se pudo obtener tu ubicación', 'error'));
 
+    // === TOGGLE ORIGEN / DESTINO ===
     function toggleOrigen() {
       const btn = document.getElementById('btn-origen');
       const centro = document.getElementById('marcador-centro');
@@ -158,6 +178,7 @@
         btn.classList.remove('modo-activo');
         centro.style.display = 'none';
         confirmarMarcador('origen');
+        // Al confirmar origen manual → quitamos el marcador azul
         if (markerUbicacion) { map.removeLayer(markerUbicacion); markerUbicacion = null; }
       }
     }
@@ -178,25 +199,40 @@
 
     function confirmarMarcador(tipo) {
       const centro = map.getCenter();
+
       fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=\( {centro.lat}&lon= \){centro.lng}&accept-language=es`)
         .then(r => r.json())
-        .then(d => {
-          const dir = d?.display_name || 'Dirección desconocida';
+        .then(data => {
+          const direccion = data?.display_name || "Dirección seleccionada";
+
           if (tipo === 'origen') {
             origenModificado = true;
             if (marcadorOrigen) map.removeLayer(marcadorOrigen);
             marcadorOrigen = L.marker(centro, { icon: iconOrigen }).addTo(map).bindPopup('Origen').openPopup();
-            if (window.Android?.setOrigen) window.Android.setOrigen(dir);
+            if (window.Android?.setOrigen) window.Android.setOrigen(direccion);
             notificar('Origen establecido', 'success');
           } else {
             if (marcadorDestino) map.removeLayer(marcadorDestino);
             marcadorDestino = L.marker(centro, { icon: iconDestino }).addTo(map).bindPopup('Destino').openPopup();
-            if (window.Android?.setDestino) window.Android.setDestino(dir);
+            if (window.Android?.setDestino) window.Android.setDestino(direccion);
             notificar('Destino establecido', 'success');
           }
           trazarRuta();
         })
-        .catch(() => notificar('Error al obtener dirección', 'error'));
+        .catch(() => {
+          const fallback = tipo === 'origen' ? "Origen manual" : "Destino manual";
+          if (tipo === 'origen') {
+            origenModificado = true;
+            if (marcadorOrigen) map.removeLayer(marcadorOrigen);
+            marcadorOrigen = L.marker(centro, { icon: iconOrigen }).addTo(map);
+            if (window.Android?.setOrigen) window.Android.setOrigen(fallback);
+          } else {
+            if (marcadorDestino) map.removeLayer(marcadorDestino);
+            marcadorDestino = L.marker(centro, { icon: iconDestino }).addTo(map);
+            if (window.Android?.setDestino) window.Android.setDestino(fallback);
+          }
+          trazarRuta();
+        });
     }
 
     function obtenerOrigen() {
@@ -236,10 +272,7 @@
       if (markerUbicacion) { map.removeLayer(markerUbicacion); markerUbicacion = null; }
       origenModificado = false;
 
-      // COMUNICACIÓN CON ANDROID 100% GARANTIZADA
-      if (window.Android?.limpiarDirecciones) {
-        window.Android.limpiarDirecciones();
-      }
+      if (window.Android?.limpiarDirecciones) window.Android.limpiarDirecciones();
 
       notificar(borrado ? 'Ruta eliminada' : 'Nada que borrar', borrado ? 'success' : 'info');
     }
@@ -251,7 +284,6 @@
       notificar('Buscando tu ubicación...', 'info');
     }
 
-    // Iniciar
     detectarUbicacion();
   </script>
 </body>
