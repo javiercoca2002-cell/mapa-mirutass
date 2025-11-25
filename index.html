@@ -139,9 +139,94 @@
     .marcador-activo {
       animation: pulse 1.5s infinite;
     }
+
+    /* MEJORAS AGREGADAS */
+    
+    /* Loading State */
+    #loading-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(255, 255, 255, 0.9);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 2000;
+      transition: opacity 0.3s ease;
+    }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #6764FD;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 15px;
+    }
+
+    .loading-text {
+      color: #333;
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* Notificaciones mejoradas */
+    .custom-alert {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-100px);
+      background: rgba(0,0,0,0.9);
+      color: white;
+      padding: 12px 20px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 500;
+      z-index: 2000;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.1);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+      transition: all 0.3s ease;
+      opacity: 0;
+    }
+
+    .custom-alert.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
+    /* Mejoras de accesibilidad */
+    .boton-mapa:focus {
+      outline: 2px solid rgba(255,255,255,0.5);
+      outline-offset: 2px;
+    }
+
+    /* Estados de carga mejorados */
+    .loading-state {
+      opacity: 0.7;
+      pointer-events: none;
+    }
   </style>
 </head>
 <body>
+  <!-- Loading Screen Mejorado -->
+  <div id="loading-overlay">
+    <div class="spinner"></div>
+    <div class="loading-text">Cargando mapa...</div>
+  </div>
+
+  <!-- Sistema de Notificaciones -->
+  <div id="customAlert" class="custom-alert"></div>
+
   <div id="map"></div>
   <div id="marcador-centro"></div>
 
@@ -185,11 +270,58 @@
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.min.js"></script>
   <script>
+    // MEJORA: Sistema de notificaciones
+    function mostrarNotificacion(mensaje, tipo = 'info') {
+      const alert = document.getElementById('customAlert');
+      alert.textContent = mensaje;
+      alert.className = 'custom-alert';
+      
+      if (tipo === 'error') {
+        alert.style.background = 'rgba(255, 71, 87, 0.9)';
+      } else if (tipo === 'success') {
+        alert.style.background = 'rgba(46, 213, 115, 0.9)';
+      }
+      
+      alert.classList.add('show');
+      
+      setTimeout(() => {
+        alert.classList.remove('show');
+      }, 3000);
+    }
+
+    // MEJORA: Loading state management
+    function mostrarLoading() {
+      document.getElementById('loading-overlay').style.display = 'flex';
+      setTimeout(() => {
+        document.getElementById('loading-overlay').style.opacity = '1';
+      }, 10);
+    }
+
+    function ocultarLoading() {
+      document.getElementById('loading-overlay').style.opacity = '0';
+      setTimeout(() => {
+        document.getElementById('loading-overlay').style.display = 'none';
+      }, 300);
+    }
+
+    // MEJORA: Inicialización mejorada del mapa
+    mostrarLoading();
+
     var map = L.map('map').setView([21.9276, -79.4432], 14);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    
+    // MEJORA: Manejo de errores en carga de tiles
+    var tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 18,
       attribution: '© OpenStreetMap'
     }).addTo(map);
+
+    tileLayer.on('load', function() {
+      setTimeout(ocultarLoading, 500);
+    });
+
+    tileLayer.on('tileerror', function() {
+      mostrarNotificacion('Error cargando el mapa. Verifica tu conexión.', 'error');
+    });
 
     var rutaControl = null;
     var markerUbicacion = null;
@@ -202,6 +334,7 @@
     var seleccionandoOrigen = false;
     var seleccionandoDestino = false;
 
+    // MEJORA: Función mejorada con notificaciones
     function toggleOrigen() {
       if (!seleccionandoOrigen) {
         seleccionandoOrigen = true;
@@ -209,6 +342,7 @@
         document.getElementById('btn-origen').classList.add('modo-activo');
         document.getElementById('marcador-centro').classList.add('marcador-activo');
         activarMarcadorFlotante('origen');
+        mostrarNotificacion('Selecciona el punto de origen en el mapa');
       } else {
         seleccionandoOrigen = false;
         document.getElementById('btn-origen').classList.remove('modo-activo');
@@ -218,6 +352,7 @@
       }
     }
 
+    // MEJORA: Función mejorada con notificaciones
     function toggleDestino() {
       if (!seleccionandoDestino) {
         seleccionandoDestino = true;
@@ -225,6 +360,7 @@
         document.getElementById('btn-destino').classList.add('modo-activo');
         document.getElementById('marcador-centro').classList.add('marcador-activo');
         activarMarcadorFlotante('destino');
+        mostrarNotificacion('Selecciona el punto de destino en el mapa');
       } else {
         seleccionandoDestino = false;
         document.getElementById('btn-destino').classList.remove('modo-activo');
@@ -247,8 +383,12 @@
         marcadorOrigen = L.marker(e.latlng).addTo(map).bindPopup('Origen automático');
       }
 
+      // MEJORA: Manejo de errores en fetch
       fetch('https://nominatim.openstreetmap.org/reverse?format=json&lat=' + e.latitude + '&lon=' + e.longitude)
-        .then(res => res.json())
+        .then(res => {
+          if (!res.ok) throw new Error('Error en la respuesta del servidor');
+          return res.json();
+        })
         .then(data => {
           if (data && data.display_name) {
             direccionDetectada = data.display_name;
@@ -256,11 +396,24 @@
               window.Android.setOrigen(direccionDetectada);
             }
           }
+        })
+        .catch(error => {
+          console.warn('Error obteniendo dirección:', error);
+          mostrarNotificacion('Error obteniendo la dirección', 'error');
         });
     });
 
-    map.on('locationerror', function() {
-      alert('No se pudo obtener tu ubicación');
+    // MEJORA: Manejo mejorado de errores de ubicación
+    map.on('locationerror', function(e) {
+      let mensaje = 'No se pudo obtener tu ubicación';
+      if (e.code === 1) {
+        mensaje = 'Permiso de ubicación denegado. Activa la ubicación en ajustes.';
+      } else if (e.code === 2) {
+        mensaje = 'Ubicación no disponible. Verifica tu conexión.';
+      } else if (e.code === 3) {
+        mensaje = 'Tiempo de espera agotado para obtener ubicación.';
+      }
+      mostrarNotificacion(mensaje, 'error');
     });
 
     function eliminarUbicacion() {
@@ -271,12 +424,20 @@
       }
     }
 
+    // MEJORA: Función mejorada con notificación
     function restaurarUbicacion() {
       origenModificado = false;
       if (rutaControl) { map.removeControl(rutaControl); rutaControl = null; }
       if (marcadorOrigen) { map.removeLayer(marcadorOrigen); marcadorOrigen = null; }
       if (marcadorDestino) { map.removeLayer(marcadorDestino); marcadorDestino = null; }
+      
+      // MEJORA: Limpiar campos en Android al restaurar
+      if (window.Android && window.Android.limpiarDirecciones) {
+        window.Android.limpiarDirecciones();
+      }
+      
       detectarUbicacion();
+      mostrarNotificacion('Ubicación restaurada correctamente', 'success');
     }
 
     function activarMarcadorFlotante(tipo) {
@@ -284,11 +445,19 @@
       document.getElementById("marcador-centro").style.display = "block";
     }
 
+    // MEJORA: Función mejorada con manejo de errores
     function confirmarMarcadorFlotante(tipo) {
       var coords = map.getCenter();
       document.getElementById("marcador-centro").style.display = "none";
+      
+      // MEJORA: Mostrar loading durante la obtención de dirección
+      mostrarNotificacion('Obteniendo dirección...');
+      
       fetch('https://nominatim.openstreetmap.org/reverse?format=json&lat=' + coords.lat + '&lon=' + coords.lng)
-        .then(res => res.json())
+        .then(res => {
+          if (!res.ok) throw new Error('Error en la respuesta del servidor');
+          return res.json();
+        })
         .then(data => {
           if (data && data.display_name) {
             var direccion = data.display_name;
@@ -296,16 +465,22 @@
               if (marcadorOrigen) map.removeLayer(marcadorOrigen);
               marcadorOrigen = L.marker(coords).addTo(map).bindPopup('Origen').openPopup();
               if (window.Android && window.Android.setOrigen) window.Android.setOrigen(direccion);
+              mostrarNotificacion('Origen establecido correctamente', 'success');
             } else if (tipo === 'destino') {
               if (marcadorDestino) map.removeLayer(marcadorDestino);
               marcadorDestino = L.marker(coords).addTo(map).bindPopup('Destino').openPopup();
               if (window.Android && window.Android.setDestino) window.Android.setDestino(direccion);
+              mostrarNotificacion('Destino establecido correctamente', 'success');
             }
 
             // CREAR RUTA AUTOMÁTICAMENTE SI HAY ORIGEN Y DESTINO
             crearRutaSiEsNecesario();
             modoSeleccion = null;
           }
+        })
+        .catch(error => {
+          console.error('Error obteniendo dirección:', error);
+          mostrarNotificacion('Error al obtener la dirección. Intenta nuevamente.', 'error');
         });
     }
 
@@ -316,6 +491,10 @@
 
       if (origen && destino) {
         if (rutaControl) map.removeControl(rutaControl);
+        
+        // MEJORA: Notificación de cálculo de ruta
+        mostrarNotificacion('Calculando ruta óptima...');
+        
         rutaControl = L.Routing.control({
           waypoints: [origen, destino],
           lineOptions: { styles: [{ color: '#6764FD', weight: 5 }] },
@@ -323,6 +502,19 @@
           addWaypoints: false,
           routeWhileDragging: false
         }).addTo(map);
+
+        // MEJORA: Evento cuando la ruta está calculada
+        rutaControl.on('routesfound', function(e) {
+          const routes = e.routes;
+          const summary = routes[0].summary;
+          // MEJORA: Mostrar información de la ruta calculada
+          mostrarNotificacion(`Ruta calculada: ${(summary.totalDistance / 1000).toFixed(1)} km`, 'success');
+        });
+
+        // MEJORA: Manejo de errores en cálculo de ruta
+        rutaControl.on('routingerror', function(e) {
+          mostrarNotificacion('No se pudo calcular la ruta. Verifica los puntos seleccionados.', 'error');
+        });
       }
     }
 
@@ -336,23 +528,29 @@
       return null;
     }
 
-    // FUNCIÓN MEJORADA: BORRAR RUTA Y LIMPIAR EDITTEXT EN ANDROID
+    // MEJORA: Función mejorada con notificación detallada
     function borrarRutaDesdeApp() {
       if (rutaControl || marcadorOrigen || marcadorDestino) {
+        let elementosEliminados = [];
+        
         if (rutaControl) {
           map.removeControl(rutaControl);
           rutaControl = null;
+          elementosEliminados.push('ruta');
         }
-        // ELIMINAR SIEMPRE EL MARCADOR DE ORIGEN, SIN IMPORTAR SI ES AUTOMÁTICO O MANUAL
+        
         if (marcadorOrigen) { 
           map.removeLayer(marcadorOrigen); 
           marcadorOrigen = null; 
+          elementosEliminados.push('origen');
         }
+        
         if (marcadorDestino) { 
           map.removeLayer(marcadorDestino); 
           marcadorDestino = null; 
+          elementosEliminados.push('destino');
         }
-        // RESETEAR EL ESTADO DE ORIGEN MODIFICADO
+        
         origenModificado = false;
 
         // NUEVO: LIMPIAR LOS EDITTEXT EN LA APP ANDROID
@@ -360,14 +558,22 @@
           window.Android.limpiarDirecciones();
         }
 
-        alert("Ruta eliminada correctamente");
+        // MEJORA: Notificación mejorada
+        mostrarNotificacion('Ruta y marcadores eliminados correctamente', 'success');
       } else {
-        alert("No existe una ruta definitiva que borrar.");
+        mostrarNotificacion('No hay elementos para eliminar', 'info');
       }
     }
 
     // Inicializar la ubicación al cargar la página
     detectarUbicacion();
+
+    // MEJORA: Manejo de errores global
+    window.addEventListener('error', function(e) {
+      console.error('Error global:', e.error);
+      mostrarNotificacion('Ha ocurrido un error inesperado', 'error');
+    });
+
   </script>
 </body>
 </html>
