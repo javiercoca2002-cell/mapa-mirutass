@@ -39,15 +39,15 @@
       transform: translateX(-50%);
       z-index: 1000;
       background: rgba(0,0,0,0.7);
-      padding: 12px 16px; /* Reducido */
-      border-radius: 18px; /* Ligeramente más pequeño */
+      padding: 12px 16px;
+      border-radius: 18px;
       display: flex;
       flex-direction: row;
-      gap: 16px; /* Reducido el espacio entre botones */
+      gap: 16px;
       box-shadow: 0 6px 20px rgba(0,0,0,0.4);
       backdrop-filter: blur(10px);
       border: 1px solid rgba(255,255,255,0.1);
-      max-width: 90%; /* Asegura que no sobrepase los bordes */
+      max-width: 90%;
     }
 
     /* Contenedor para cada botón con su etiqueta */
@@ -55,7 +55,7 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 6px; /* Reducido */
+      gap: 6px;
       transition: transform 0.2s ease;
     }
 
@@ -65,8 +65,8 @@
 
     /* Botones circulares - MÁS PEQUEÑOS */
     .boton-mapa {
-      width: 50px; /* Reducido de 60px */
-      height: 50px; /* Reducido de 60px */
+      width: 50px;
+      height: 50px;
       border-radius: 50%;
       background: linear-gradient(135deg, #6764FD, #4b48c9);
       color: white;
@@ -103,8 +103,8 @@
 
     /* Iconos SVG - MÁS PEQUEÑOS */
     .icono-boton {
-      width: 22px; /* Reducido de 26px */
-      height: 22px; /* Reducido de 26px */
+      width: 22px;
+      height: 22px;
       fill: white;
       filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));
       transition: transform 0.2s ease;
@@ -117,7 +117,7 @@
     /* Etiquetas de texto debajo de los botones */
     .etiqueta-boton {
       color: white;
-      font-size: 12px; /* Ligeramente más pequeño */
+      font-size: 12px;
       font-weight: 500;
       text-shadow: 0 1px 2px rgba(0,0,0,0.5);
       white-space: nowrap;
@@ -241,12 +241,12 @@
       coordenadasUbicacion = [e.latitude, e.longitude];
       if (markerUbicacion) map.removeLayer(markerUbicacion);
       markerUbicacion = L.marker(e.latlng).addTo(map).bindPopup('Tu ubicación').openPopup();
-      
+
       // CREAR MARCADOR DE ORIGEN AUTOMÁTICAMENTE CON LA GEOLOCALIZACIÓN
       if (!marcadorOrigen && !origenModificado) {
         marcadorOrigen = L.marker(e.latlng).addTo(map).bindPopup('Origen automático');
       }
-      
+
       fetch('https://nominatim.openstreetmap.org/reverse?format=json&lat=' + e.latitude + '&lon=' + e.longitude)
         .then(res => res.json())
         .then(data => {
@@ -301,7 +301,7 @@
               marcadorDestino = L.marker(coords).addTo(map).bindPopup('Destino').openPopup();
               if (window.Android && window.Android.setDestino) window.Android.setDestino(direccion);
             }
-            
+
             // CREAR RUTA AUTOMÁTICAMENTE SI HAY ORIGEN Y DESTINO
             crearRutaSiEsNecesario();
             modoSeleccion = null;
@@ -309,11 +309,11 @@
         });
     }
 
-    // NUEVA FUNCIÓN: CREAR RUTA AUTOMÁTICAMENTE
+    // FUNCIÓN: CREAR RUTA AUTOMÁTICAMENTE
     function crearRutaSiEsNecesario() {
       var origen = obtenerOrigenActual();
       var destino = marcadorDestino ? marcadorDestino.getLatLng() : null;
-      
+
       if (origen && destino) {
         if (rutaControl) map.removeControl(rutaControl);
         rutaControl = L.Routing.control({
@@ -326,7 +326,7 @@
       }
     }
 
-    // NUEVA FUNCIÓN: OBTENER ORIGEN ACTUAL (AUTOMÁTICO O MANUAL)
+    // FUNCIÓN: OBTENER ORIGEN ACTUAL (AUTOMÁTICO O MANUAL)
     function obtenerOrigenActual() {
       if (marcadorOrigen) {
         return marcadorOrigen.getLatLng();
@@ -336,13 +336,14 @@
       return null;
     }
 
+    // FUNCIÓN MEJORADA: BORRAR RUTA Y LIMPIAR EDITTEXT EN ANDROID
     function borrarRutaDesdeApp() {
       if (rutaControl || marcadorOrigen || marcadorDestino) {
         if (rutaControl) {
           map.removeControl(rutaControl);
           rutaControl = null;
         }
-        // CORRECCIÓN: ELIMINAR SIEMPRE EL MARCADOR DE ORIGEN, SIN IMPORTAR SI ES AUTOMÁTICO O MANUAL
+        // ELIMINAR SIEMPRE EL MARCADOR DE ORIGEN, SIN IMPORTAR SI ES AUTOMÁTICO O MANUAL
         if (marcadorOrigen) { 
           map.removeLayer(marcadorOrigen); 
           marcadorOrigen = null; 
@@ -351,14 +352,21 @@
           map.removeLayer(marcadorDestino); 
           marcadorDestino = null; 
         }
-        // CORRECCIÓN: RESETEAR EL ESTADO DE ORIGEN MODIFICADO
+        // RESETEAR EL ESTADO DE ORIGEN MODIFICADO
         origenModificado = false;
+        
+        // NUEVO: LIMPIAR LOS EDITTEXT EN LA APP ANDROID
+        if (window.Android && window.Android.limpiarDirecciones) {
+          window.Android.limpiarDirecciones();
+        }
+        
         alert("Ruta eliminada correctamente");
       } else {
         alert("No existe una ruta definitiva que borrar.");
       }
     }
 
+    // Inicializar la ubicación al cargar la página
     detectarUbicacion();
   </script>
 </body>
