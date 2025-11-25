@@ -304,15 +304,29 @@
       }, 300);
     }
 
+    // LÍMITES DEL MUNICIPIO SANCTI SPÍRITUS
+    const limitesSanctiSpiritus = [
+      [21.70, -79.60], // Suroeste
+      [22.10, -79.20]  // Noreste
+    ];
+
     // MEJORA: Inicialización mejorada del mapa
     mostrarLoading();
 
     var map = L.map('map').setView([21.9276, -79.4432], 14);
 
+    // Establecer límites del mapa para Sancti Spíritus
+    map.setMaxBounds(limitesSanctiSpiritus);
+    map.on('drag', function() {
+      map.panInsideBounds(limitesSanctiSpiritus, { animate: false });
+    });
+
     // MEJORA: Manejo de errores en carga de tiles
     var tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 18,
-      attribution: '© OpenStreetMap'
+      minZoom: 12,
+      attribution: '© OpenStreetMap',
+      bounds: limitesSanctiSpiritus
     }).addTo(map);
 
     tileLayer.on('load', function() {
@@ -332,6 +346,42 @@
     var modoSeleccion = null;
     var seleccionandoOrigen = false;
     var seleccionandoDestino = false;
+
+    // FUNCIÓN: VERIFICAR SI LAS COORDENADAS ESTÁN DENTRO DE SANCTI SPÍRITUS
+    function estaDentroDeLimites(lat, lng) {
+      return lat >= limitesSanctiSpiritus[0][0] && 
+             lat <= limitesSanctiSpiritus[1][0] && 
+             lng >= limitesSanctiSpiritus[0][1] && 
+             lng <= limitesSanctiSpiritus[1][1];
+    }
+
+    // FUNCIÓN: BUSCAR DENTRO DE LÍMITES CON NOMINATIM
+    function buscarDentroDeLimites(direccion) {
+      const bounds = limitesSanctiSpiritus;
+      const viewbox = `${bounds[0][1]},${bounds[0][0]},${bounds[1][1]},${bounds[1][0]}`;
+      
+      return fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(direccion)}&limit=5&viewbox=${viewbox}&bounded=1&accept-language=es`)
+        .then(res => {
+          if (!res.ok) throw new Error('Error en el servidor');
+          return res.json();
+        })
+        .then(data => {
+          if (data && data.length > 0) {
+            // Filtrar resultados que estén dentro de los límites
+            const resultadosFiltrados = data.filter(item => 
+              estaDentroDeLimites(parseFloat(item.lat), parseFloat(item.lon))
+            );
+            
+            if (resultadosFiltrados.length > 0) {
+              return resultadosFiltrados[0]; // Devolver el primer resultado dentro de los límites
+            } else {
+              throw new Error(`"${direccion}" no se encuentra dentro del municipio Sancti Spíritus`);
+            }
+          } else {
+            throw new Error(`No se encontró: "${direccion}"`);
+          }
+        });
+    }
 
     // MEJORA: Función mejorada con notificaciones
     function toggleOrigen() {
@@ -373,6 +423,12 @@
     }
 
     map.on('locationfound', function(e) {
+      // Verificar si la ubicación está dentro de Sancti Spíritus
+      if (!estaDentroDeLimites(e.latitude, e.longitude)) {
+        mostrarNotificacion('Tu ubicación está fuera del municipio Sancti Spíritus', 'error');
+        return;
+      }
+
       coordenadasUbicacion = [e.latitude, e.longitude];
 
       // SOLO crear marcador si no hay uno existente y no se ha modificado manualmente
@@ -456,6 +512,14 @@
     // MEJORA: Función mejorada con manejo de errores
     function confirmarMarcadorFlotante(tipo) {
       var coords = map.getCenter();
+      
+      // Verificar que el punto seleccionado esté dentro de los límites
+      if (!estaDentroDeLimites(coords.lat, coords.lng)) {
+        mostrarNotificacion('El punto seleccionado está fuera del municipio Sancti Spíritus', 'error');
+        document.getElementById("marcador-centro").style.display = "none";
+        return;
+      }
+
       document.getElementById("marcador-centro").style.display = "none";
 
       // MEJORA: Mostrar loading durante la obtención de dirección
@@ -543,63 +607,63 @@
     }
 
     // MEJORA: Función mejorada con notificación detallada - VERSIÓN CORREGIDA
-function borrarRutaDesdeApp() {
-  let elementosEliminados = [];
+    function borrarRutaDesdeApp() {
+      let elementosEliminados = [];
 
-  // 1. Eliminar ruta si existe
-  if (rutaControl) {
-    map.removeControl(rutaControl);
-    rutaControl = null;
-    elementosEliminados.push('ruta');
-  }
+      // 1. Eliminar ruta si existe
+      if (rutaControl) {
+        map.removeControl(rutaControl);
+        rutaControl = null;
+        elementosEliminados.push('ruta');
+      }
 
-  // 2. Eliminar TODOS los marcadores de origen
-  if (markerUbicacion) { 
-    map.removeLayer(markerUbicacion); 
-    markerUbicacion = null; 
-    elementosEliminados.push('origen');
-  }
+      // 2. Eliminar TODOS los marcadores de origen
+      if (markerUbicacion) { 
+        map.removeLayer(markerUbicacion); 
+        markerUbicacion = null; 
+        elementosEliminados.push('origen');
+      }
 
-  // 3. Eliminar TODOS los marcadores de destino
-  if (marcadorDestino) { 
-    map.removeLayer(marcadorDestino); 
-    marcadorDestino = null; 
-    elementosEliminados.push('destino');
-  }
+      // 3. Eliminar TODOS los marcadores de destino
+      if (marcadorDestino) { 
+        map.removeLayer(marcadorDestino); 
+        marcadorDestino = null; 
+        elementosEliminados.push('destino');
+      }
 
-  // 4. Resetear estados y variables
-  origenModificado = false;
-  coordenadasUbicacion = null;
-  
-  // 5. Limpiar modos de selección activos
-  if (seleccionandoOrigen) {
-    seleccionandoOrigen = false;
-    document.getElementById('btn-origen').classList.remove('modo-activo');
-  }
-  
-  if (seleccionandoDestino) {
-    seleccionandoDestino = false;
-    document.getElementById('btn-destino').classList.remove('modo-activo');
-  }
-  
-  // 6. Ocultar marcador flotante
-  document.getElementById('marcador-centro').classList.remove('marcador-activo');
-  document.getElementById('marcador-centro').style.display = 'none';
+      // 4. Resetear estados y variables
+      origenModificado = false;
+      coordenadasUbicacion = null;
 
-  // 7. Limpiar los EditText en la App Android
-  if (window.Android && window.Android.limpiarDirecciones) {
-    window.Android.limpiarDirecciones();
-  }
+      // 5. Limpiar modos de selección activos
+      if (seleccionandoOrigen) {
+        seleccionandoOrigen = false;
+        document.getElementById('btn-origen').classList.remove('modo-activo');
+      }
 
-  // 8. Mostrar notificación
-  if (elementosEliminados.length > 0) {
-    mostrarNotificacion('Ruta y todos los marcadores eliminados correctamente', 'success');
-  } else {
-    mostrarNotificacion('No había elementos para eliminar', 'info');
-  }
-  
-  console.log('Elementos eliminados:', elementosEliminados);
-}
+      if (seleccionandoDestino) {
+        seleccionandoDestino = false;
+        document.getElementById('btn-destino').classList.remove('modo-activo');
+      }
+
+      // 6. Ocultar marcador flotante
+      document.getElementById('marcador-centro').classList.remove('marcador-activo');
+      document.getElementById('marcador-centro').style.display = 'none';
+
+      // 7. Limpiar los EditText en la App Android
+      if (window.Android && window.Android.limpiarDirecciones) {
+        window.Android.limpiarDirecciones();
+      }
+
+      // 8. Mostrar notificación
+      if (elementosEliminados.length > 0) {
+        mostrarNotificacion('Ruta y todos los marcadores eliminados correctamente', 'success');
+      } else {
+        mostrarNotificacion('No había elementos para eliminar', 'info');
+      }
+
+      console.log('Elementos eliminados:', elementosEliminados);
+    }
 
     // FUNCIÓN: LIMPIAR SOLO EL MARCADOR DE ORIGEN
     function limpiarMarcadorOrigen() {
@@ -676,7 +740,7 @@ function borrarRutaDesdeApp() {
       mostrarNotificacion('Direcciones limpiadas', 'success');
     }
 
-    // NUEVA FUNCIÓN: MOSTRAR DIRECCIONES DESDE ANDROID
+    // NUEVA FUNCIÓN: MOSTRAR DIRECCIONES DESDE ANDROID CON LÍMITES
     function mostrarDireccionesEnMapa(origen, destino) {
         console.log("Mostrando en mapa - Origen:", origen, "Destino:", destino);
 
@@ -692,55 +756,35 @@ function borrarRutaDesdeApp() {
 
         mostrarNotificacion('Buscando ubicaciones en el mapa...');
 
-        // Función para convertir dirección a coordenadas
-        function geocodificarDireccion(direccion, esOrigen) {
-            return fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(direccion)}&limit=1&accept-language=es`)
-                .then(res => {
-                    if (!res.ok) throw new Error('Error en el servidor');
-                    return res.json();
-                })
-                .then(data => {
-                    if (data && data.length > 0) {
-                        const lat = parseFloat(data[0].lat);
-                        const lon = parseFloat(data[0].lon);
-                        const coords = L.latLng(lat, lon);
-
-                        // Crear marcador
-                        const marcador = L.marker(coords).addTo(map);
-                        const tipo = esOrigen ? 'Origen' : 'Destino';
-                        const icono = esOrigen ? '📍' : '🎯';
-
-                        marcador.bindPopup(`${icono} <strong>${tipo}</strong><br>${direccion}`).openPopup();
-
-                        if (esOrigen) {
-                            // USAR markerUbicacion PARA EL ORIGEN
-                            if (markerUbicacion) {
-                                markerUbicacion.setLatLng(coords);
-                                markerUbicacion.setPopupContent(`${icono} <strong>${tipo}</strong><br>${direccion}`).openPopup();
-                            } else {
-                                markerUbicacion = L.marker(coords).addTo(map)
-                                    .bindPopup(`${icono} <strong>${tipo}</strong><br>${direccion}`).openPopup();
-                            }
-                            origenModificado = true;
-                        } else {
-                            if (marcadorDestino) map.removeLayer(marcadorDestino);
-                            marcadorDestino = L.marker(coords).addTo(map)
-                                .bindPopup(`${icono} <strong>${tipo}</strong><br>${direccion}`).openPopup();
-                        }
-
-                        return coords;
-                    } else {
-                        throw new Error(`No se encontró: "${direccion}"`);
-                    }
-                });
-        }
-
         // Procesar ambas direcciones
         Promise.all([
-            geocodificarDireccion(origen, true),
-            geocodificarDireccion(destino, false)
+            buscarDentroDeLimites(origen),
+            buscarDentroDeLimites(destino)
         ])
-        .then(([coordsOrigen, coordsDestino]) => {
+        .then(([dataOrigen, dataDestino]) => {
+            const latOrigen = parseFloat(dataOrigen.lat);
+            const lonOrigen = parseFloat(dataOrigen.lon);
+            const latDestino = parseFloat(dataDestino.lat);
+            const lonDestino = parseFloat(dataDestino.lon);
+            
+            const coordsOrigen = L.latLng(latOrigen, lonOrigen);
+            const coordsDestino = L.latLng(latDestino, lonDestino);
+
+            // Crear marcadores
+            if (markerUbicacion) {
+                markerUbicacion.setLatLng(coordsOrigen);
+                markerUbicacion.setPopupContent(`📍 <strong>Origen</strong><br>${origen}`).openPopup();
+            } else {
+                markerUbicacion = L.marker(coordsOrigen).addTo(map)
+                    .bindPopup(`📍 <strong>Origen</strong><br>${origen}`).openPopup();
+            }
+            
+            if (marcadorDestino) map.removeLayer(marcadorDestino);
+            marcadorDestino = L.marker(coordsDestino).addTo(map)
+                .bindPopup(`🎯 <strong>Destino</strong><br>${destino}`).openPopup();
+
+            origenModificado = true;
+
             // Centrar el mapa para mostrar ambos puntos
             const group = new L.featureGroup([markerUbicacion, marcadorDestino]);
             map.fitBounds(group.getBounds().pad(0.1));
