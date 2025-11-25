@@ -141,7 +141,7 @@
     }
 
     /* MEJORAS AGREGADAS */
-    
+
     /* Loading State */
     #loading-overlay {
       position: absolute;
@@ -275,15 +275,15 @@
       const alert = document.getElementById('customAlert');
       alert.textContent = mensaje;
       alert.className = 'custom-alert';
-      
+
       if (tipo === 'error') {
         alert.style.background = 'rgba(255, 71, 87, 0.9)';
       } else if (tipo === 'success') {
         alert.style.background = 'rgba(46, 213, 115, 0.9)';
       }
-      
+
       alert.classList.add('show');
-      
+
       setTimeout(() => {
         alert.classList.remove('show');
       }, 3000);
@@ -308,7 +308,7 @@
     mostrarLoading();
 
     var map = L.map('map').setView([21.9276, -79.4432], 14);
-    
+
     // MEJORA: Manejo de errores en carga de tiles
     var tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 18,
@@ -430,12 +430,12 @@
       if (rutaControl) { map.removeControl(rutaControl); rutaControl = null; }
       if (marcadorOrigen) { map.removeLayer(marcadorOrigen); marcadorOrigen = null; }
       if (marcadorDestino) { map.removeLayer(marcadorDestino); marcadorDestino = null; }
-      
+
       // MEJORA: Limpiar campos en Android al restaurar
       if (window.Android && window.Android.limpiarDirecciones) {
         window.Android.limpiarDirecciones();
       }
-      
+
       detectarUbicacion();
       mostrarNotificacion('Ubicación restaurada correctamente', 'success');
     }
@@ -449,10 +449,10 @@
     function confirmarMarcadorFlotante(tipo) {
       var coords = map.getCenter();
       document.getElementById("marcador-centro").style.display = "none";
-      
+
       // MEJORA: Mostrar loading durante la obtención de dirección
       mostrarNotificacion('Obteniendo dirección...');
-      
+
       fetch('https://nominatim.openstreetmap.org/reverse?format=json&lat=' + coords.lat + '&lon=' + coords.lng)
         .then(res => {
           if (!res.ok) throw new Error('Error en la respuesta del servidor');
@@ -491,10 +491,10 @@
 
       if (origen && destino) {
         if (rutaControl) map.removeControl(rutaControl);
-        
+
         // MEJORA: Notificación de cálculo de ruta
         mostrarNotificacion('Calculando ruta óptima...');
-        
+
         rutaControl = L.Routing.control({
           waypoints: [origen, destino],
           lineOptions: { styles: [{ color: '#6764FD', weight: 5 }] },
@@ -532,25 +532,25 @@
     function borrarRutaDesdeApp() {
       if (rutaControl || marcadorOrigen || marcadorDestino) {
         let elementosEliminados = [];
-        
+
         if (rutaControl) {
           map.removeControl(rutaControl);
           rutaControl = null;
           elementosEliminados.push('ruta');
         }
-        
+
         if (marcadorOrigen) { 
           map.removeLayer(marcadorOrigen); 
           marcadorOrigen = null; 
           elementosEliminados.push('origen');
         }
-        
+
         if (marcadorDestino) { 
           map.removeLayer(marcadorDestino); 
           marcadorDestino = null; 
           elementosEliminados.push('destino');
         }
-        
+
         origenModificado = false;
 
         // NUEVO: LIMPIAR LOS EDITTEXT EN LA APP ANDROID
@@ -563,6 +563,98 @@
       } else {
         mostrarNotificacion('No hay elementos para eliminar', 'info');
       }
+    }
+
+    // NUEVA FUNCIÓN: MOSTRAR DIRECCIONES DESDE ANDROID
+    function mostrarDireccionesEnMapa(origen, destino) {
+        console.log("Mostrando en mapa - Origen:", origen, "Destino:", destino);
+        
+        if (!origen || !destino || origen.trim() === '' || destino.trim() === '') {
+            mostrarNotificacion('Debes proporcionar origen y destino', 'error');
+            return;
+        }
+        
+        // Limpiar marcadores existentes
+        if (marcadorOrigen) map.removeLayer(marcadorOrigen);
+        if (marcadorDestino) map.removeLayer(marcadorDestino);
+        if (rutaControl) map.removeControl(rutaControl);
+        
+        mostrarNotificacion('Buscando ubicaciones en el mapa...');
+        
+        // Función para convertir dirección a coordenadas
+        function geocodificarDireccion(direccion, esOrigen) {
+            return fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(direccion)}&limit=1&accept-language=es`)
+                .then(res => {
+                    if (!res.ok) throw new Error('Error en el servidor');
+                    return res.json();
+                })
+                .then(data => {
+                    if (data && data.length > 0) {
+                        const lat = parseFloat(data[0].lat);
+                        const lon = parseFloat(data[0].lon);
+                        const coords = L.latLng(lat, lon);
+                        
+                        // Crear marcador
+                        const marcador = L.marker(coords).addTo(map);
+                        const tipo = esOrigen ? 'Origen' : 'Destino';
+                        const icono = esOrigen ? '📍' : '🎯';
+                        
+                        marcador.bindPopup(`${icono} <strong>${tipo}</strong><br>${direccion}`).openPopup();
+                        
+                        if (esOrigen) {
+                            marcadorOrigen = marcador;
+                        } else {
+                            marcadorDestino = marcador;
+                        }
+                        
+                        return coords;
+                    } else {
+                        throw new Error(`No se encontró: "${direccion}"`);
+                    }
+                });
+        }
+        
+        // Procesar ambas direcciones
+        Promise.all([
+            geocodificarDireccion(origen, true),
+            geocodificarDireccion(destino, false)
+        ])
+        .then(([coordsOrigen, coordsDestino]) => {
+            // Centrar el mapa para mostrar ambos puntos
+            const group = new L.featureGroup([marcadorOrigen, marcadorDestino]);
+            map.fitBounds(group.getBounds().pad(0.1));
+            
+            // Crear ruta entre los puntos
+            if (rutaControl) map.removeControl(rutaControl);
+            
+            rutaControl = L.Routing.control({
+                waypoints: [coordsOrigen, coordsDestino],
+                lineOptions: { styles: [{ color: '#6764FD', weight: 5 }] },
+                createMarker: () => null,
+                addWaypoints: false,
+                routeWhileDragging: false,
+                show: false
+            }).addTo(map);
+            
+            // Mostrar información cuando la ruta esté lista
+            rutaControl.on('routesfound', function(e) {
+                const routes = e.routes;
+                const summary = routes[0].summary;
+                const distanciaKm = (summary.totalDistance / 1000).toFixed(1);
+                const tiempoMin = Math.round(summary.totalTime / 60);
+                mostrarNotificacion(`Ruta calculada: ${distanciaKm} km, ${tiempoMin} min`, 'success');
+            });
+            
+            rutaControl.on('routingerror', function(e) {
+                mostrarNotificacion('No se pudo calcular la ruta entre las ubicaciones', 'error');
+            });
+            
+            mostrarNotificacion('Ubicaciones encontradas en el mapa', 'success');
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            mostrarNotificacion(error.message, 'error');
+        });
     }
 
     // Inicializar la ubicación al cargar la página
