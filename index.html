@@ -359,7 +359,7 @@
     function buscarDentroDeLimites(direccion) {
       const bounds = limitesSanctiSpiritus;
       const viewbox = `${bounds[0][1]},${bounds[0][0]},${bounds[1][1]},${bounds[1][0]}`;
-      
+
       return fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(direccion)}&limit=5&viewbox=${viewbox}&bounded=1&accept-language=es`)
         .then(res => {
           if (!res.ok) throw new Error('Error en el servidor');
@@ -371,7 +371,7 @@
             const resultadosFiltrados = data.filter(item => 
               estaDentroDeLimites(parseFloat(item.lat), parseFloat(item.lon))
             );
-            
+
             if (resultadosFiltrados.length > 0) {
               return resultadosFiltrados[0]; // Devolver el primer resultado dentro de los límites
             } else {
@@ -512,7 +512,7 @@
     // MEJORA: Función mejorada con manejo de errores
     function confirmarMarcadorFlotante(tipo) {
       var coords = map.getCenter();
-      
+
       // Verificar que el punto seleccionado esté dentro de los límites
       if (!estaDentroDeLimites(coords.lat, coords.lng)) {
         mostrarNotificacion('El punto seleccionado está fuera del municipio Sancti Spíritus', 'error');
@@ -585,8 +585,13 @@
         rutaControl.on('routesfound', function(e) {
           const routes = e.routes;
           const summary = routes[0].summary;
+          const distanciaKm = summary.totalDistance / 1000;
+          
+          // NUEVA FUNCIONALIDAD: Calcular y enviar precio
+          calcularYEnviarPrecio(distanciaKm);
+          
           // MEJORA: Mostrar información de la ruta calculada
-          mostrarNotificacion(`Ruta calculada: ${(summary.totalDistance / 1000).toFixed(1)} km`, 'success');
+          mostrarNotificacion(`Ruta calculada: ${distanciaKm.toFixed(1)} km`, 'success');
         });
 
         // MEJORA: Manejo de errores en cálculo de ruta
@@ -766,7 +771,7 @@
             const lonOrigen = parseFloat(dataOrigen.lon);
             const latDestino = parseFloat(dataDestino.lat);
             const lonDestino = parseFloat(dataDestino.lon);
-            
+
             const coordsOrigen = L.latLng(latOrigen, lonOrigen);
             const coordsDestino = L.latLng(latDestino, lonDestino);
 
@@ -778,7 +783,7 @@
                 markerUbicacion = L.marker(coordsOrigen).addTo(map)
                     .bindPopup(`📍 <strong>Origen</strong><br>${origen}`).openPopup();
             }
-            
+
             if (marcadorDestino) map.removeLayer(marcadorDestino);
             marcadorDestino = L.marker(coordsDestino).addTo(map)
                 .bindPopup(`🎯 <strong>Destino</strong><br>${destino}`).openPopup();
@@ -805,9 +810,13 @@
             rutaControl.on('routesfound', function(e) {
                 const routes = e.routes;
                 const summary = routes[0].summary;
-                const distanciaKm = (summary.totalDistance / 1000).toFixed(1);
+                const distanciaKm = summary.totalDistance / 1000;
                 const tiempoMin = Math.round(summary.totalTime / 60);
-                mostrarNotificacion(`Ruta calculada: ${distanciaKm} km, ${tiempoMin} min`, 'success');
+                
+                // NUEVA FUNCIONALIDAD: Calcular y enviar precio
+                calcularYEnviarPrecio(distanciaKm);
+                
+                mostrarNotificacion(`Ruta calculada: ${distanciaKm.toFixed(1)} km, ${tiempoMin} min`, 'success');
             });
 
             rutaControl.on('routingerror', function(e) {
@@ -820,6 +829,51 @@
             console.error('Error:', error);
             mostrarNotificacion(error.message, 'error');
         });
+    }
+
+    // =============================================
+    // NUEVAS FUNCIONES PARA CALCULAR PRECIO
+    // =============================================
+
+    // FUNCIÓN: CALCULAR PRECIO BASADO EN DISTANCIA
+    function calcularPrecio(distanciaKm) {
+        var tarifaPorKm = 150.0;
+        var precio = distanciaKm * tarifaPorKm;
+
+        // Tarifa mínima de 50 pesos
+        if (precio < 50) {
+            precio = 50;
+        }
+
+        return Math.round(precio); // redondea al entero más cercano
+    }
+
+    // FUNCIÓN: CALCULAR Y ENVIAR PRECIO A ANDROID
+    function calcularYEnviarPrecio(distanciaKm) {
+        var precio = calcularPrecio(distanciaKm);
+        
+        // Enviar precio a Android si está disponible
+        if (window.Android && window.Android.setPrecioViaje) {
+            window.Android.setPrecioViaje(precio);
+        }
+        
+        return precio;
+    }
+
+    // FUNCIÓN: OBTENER PRECIO ACTUAL (para uso externo si es necesario)
+    function obtenerPrecioActual() {
+        if (rutaControl) {
+            try {
+                const routes = rutaControl.getPlan().routes;
+                if (routes && routes.length > 0) {
+                    const distanciaKm = routes[0].summary.totalDistance / 1000;
+                    return calcularPrecio(distanciaKm);
+                }
+            } catch (error) {
+                console.error('Error obteniendo distancia:', error);
+            }
+        }
+        return 0;
     }
 
     // Inicializar la ubicación al cargar la página
