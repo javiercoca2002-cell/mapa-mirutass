@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>Mapa MiRutaSS</title>
+  <title>Mapa MiRutaSS - Provincia</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
@@ -304,29 +304,37 @@
       }, 300);
     }
 
-    // LÍMITES DEL MUNICIPIO SANCTI SPÍRITUS
-    const limitesSanctiSpiritus = [
-      [21.70, -79.60], // Suroeste
-      [22.10, -79.20]  // Noreste
+    // =============================================
+    // MODIFICACIÓN PRINCIPAL: LÍMITES DE LA PROVINCIA COMPLETA
+    // =============================================
+    
+    // LÍMITES DE LA PROVINCIA SANCTI SPÍRITUS (todos los municipios)
+    const limitesProvinciaSanctiSpiritus = [
+      [21.50, -80.20], // Esquina suroeste (incluye Trinidad, etc.)
+      [22.40, -79.00]  // Esquina noreste (incluye Yaguajay, etc.)
     ];
+
+    // Coordenadas del centro de la provincia
+    const centroProvincia = [21.93, -79.45];
 
     // MEJORA: Inicialización mejorada del mapa
     mostrarLoading();
 
-    var map = L.map('map').setView([21.9276, -79.4432], 14);
+    // Centrar el mapa en la provincia completa
+    var map = L.map('map').setView(centroProvincia, 10);
 
-    // Establecer límites del mapa para Sancti Spíritus
-    map.setMaxBounds(limitesSanctiSpiritus);
+    // Establecer límites del mapa para toda la provincia
+    map.setMaxBounds(limitesProvinciaSanctiSpiritus);
     map.on('drag', function() {
-      map.panInsideBounds(limitesSanctiSpiritus, { animate: false });
+      map.panInsideBounds(limitesProvinciaSanctiSpiritus, { animate: false });
     });
 
     // MEJORA: Manejo de errores en carga de tiles
     var tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 18,
-      minZoom: 12,
+      minZoom: 9, // Zoom más alejado para ver toda la provincia
       attribution: '© OpenStreetMap',
-      bounds: limitesSanctiSpiritus
+      bounds: limitesProvinciaSanctiSpiritus
     }).addTo(map);
 
     tileLayer.on('load', function() {
@@ -338,7 +346,7 @@
     });
 
     var rutaControl = null;
-    var markerUbicacion = null; // Único marcador para ubicación/origen
+    var markerUbicacion = null;
     var marcadorDestino = null;
     var direccionDetectada = "";
     var coordenadasUbicacion = null;
@@ -347,17 +355,17 @@
     var seleccionandoOrigen = false;
     var seleccionandoDestino = false;
 
-    // FUNCIÓN: VERIFICAR SI LAS COORDENADAS ESTÁN DENTRO DE SANCTI SPÍRITUS
+    // FUNCIÓN: VERIFICAR SI LAS COORDENADAS ESTÁN DENTRO DE LA PROVINCIA
     function estaDentroDeLimites(lat, lng) {
-      return lat >= limitesSanctiSpiritus[0][0] && 
-             lat <= limitesSanctiSpiritus[1][0] && 
-             lng >= limitesSanctiSpiritus[0][1] && 
-             lng <= limitesSanctiSpiritus[1][1];
+      return lat >= limitesProvinciaSanctiSpiritus[0][0] && 
+             lat <= limitesProvinciaSanctiSpiritus[1][0] && 
+             lng >= limitesProvinciaSanctiSpiritus[0][1] && 
+             lng <= limitesProvinciaSanctiSpiritus[1][1];
     }
 
-    // FUNCIÓN: BUSCAR DENTRO DE LÍMITES CON NOMINATIM
+    // FUNCIÓN: BUSCAR DENTRO DE LÍMITES DE LA PROVINCIA CON NOMINATIM
     function buscarDentroDeLimites(direccion) {
-      const bounds = limitesSanctiSpiritus;
+      const bounds = limitesProvinciaSanctiSpiritus;
       const viewbox = `${bounds[0][1]},${bounds[0][0]},${bounds[1][1]},${bounds[1][0]}`;
 
       return fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(direccion)}&limit=5&viewbox=${viewbox}&bounded=1&accept-language=es`)
@@ -367,15 +375,15 @@
         })
         .then(data => {
           if (data && data.length > 0) {
-            // Filtrar resultados que estén dentro de los límites
+            // Filtrar resultados que estén dentro de los límites de la provincia
             const resultadosFiltrados = data.filter(item => 
               estaDentroDeLimites(parseFloat(item.lat), parseFloat(item.lon))
             );
 
             if (resultadosFiltrados.length > 0) {
-              return resultadosFiltrados[0]; // Devolver el primer resultado dentro de los límites
+              return resultadosFiltrados[0];
             } else {
-              throw new Error(`"${direccion}" no se encuentra dentro del municipio Sancti Spíritus`);
+              throw new Error(`"${direccion}" no se encuentra dentro de la provincia Sancti Spíritus`);
             }
           } else {
             throw new Error(`No se encontró: "${direccion}"`);
@@ -419,29 +427,24 @@
     }
 
     function detectarUbicacion() {
-      map.locate({ setView: true, maxZoom: 16 });
+      map.locate({ setView: true, maxZoom: 14 });
     }
 
     map.on('locationfound', function(e) {
-      // Verificar si la ubicación está dentro de Sancti Spíritus
+      // Verificar si la ubicación está dentro de la provincia
       if (!estaDentroDeLimites(e.latitude, e.longitude)) {
-        mostrarNotificacion('Tu ubicación está fuera del municipio Sancti Spíritus', 'error');
+        mostrarNotificacion('Tu ubicación está fuera de la provincia Sancti Spíritus', 'error');
         return;
       }
 
       coordenadasUbicacion = [e.latitude, e.longitude];
 
-      // SOLO crear marcador si no hay uno existente y no se ha modificado manualmente
       if (!markerUbicacion && !origenModificado) {
         markerUbicacion = L.marker(e.latlng).addTo(map).bindPopup('Tu ubicación').openPopup();
-      }
-
-      // Actualizar la ubicación del marcador existente si es la ubicación automática
-      else if (markerUbicacion && !origenModificado) {
+      } else if (markerUbicacion && !origenModificado) {
         markerUbicacion.setLatLng(e.latlng);
       }
 
-      // MEJORA: Manejo de errores en fetch
       fetch('https://nominatim.openstreetmap.org/reverse?format=json&lat=' + e.latitude + '&lon=' + e.longitude)
         .then(res => {
           if (!res.ok) throw new Error('Error en la respuesta del servidor');
@@ -488,14 +491,11 @@
       if (rutaControl) { map.removeControl(rutaControl); rutaControl = null; }
       if (marcadorDestino) { map.removeLayer(marcadorDestino); marcadorDestino = null; }
 
-      // NO eliminar markerUbicacion aquí, solo permitir que se actualice con la ubicación
       if (markerUbicacion) {
-        // Mantener el marcador pero permitir que se actualice con la ubicación automática
         map.removeLayer(markerUbicacion);
         markerUbicacion = null;
       }
 
-      // MEJORA: Limpiar campos en Android al restaurar
       if (window.Android && window.Android.limpiarDirecciones) {
         window.Android.limpiarDirecciones();
       }
@@ -513,16 +513,15 @@
     function confirmarMarcadorFlotante(tipo) {
       var coords = map.getCenter();
 
-      // Verificar que el punto seleccionado esté dentro de los límites
+      // Verificar que el punto seleccionado esté dentro de los límites de la provincia
       if (!estaDentroDeLimites(coords.lat, coords.lng)) {
-        mostrarNotificacion('El punto seleccionado está fuera del municipio Sancti Spíritus', 'error');
+        mostrarNotificacion('El punto seleccionado está fuera de la provincia Sancti Spíritus', 'error');
         document.getElementById("marcador-centro").style.display = "none";
         return;
       }
 
       document.getElementById("marcador-centro").style.display = "none";
 
-      // MEJORA: Mostrar loading durante la obtención de dirección
       mostrarNotificacion('Obteniendo dirección...');
 
       fetch('https://nominatim.openstreetmap.org/reverse?format=json&lat=' + coords.lat + '&lon=' + coords.lng)
@@ -534,14 +533,13 @@
           if (data && data.display_name) {
             var direccion = data.display_name;
             if (tipo === 'origen') {
-              // USAR EL MISMO MARCADOR PARA UBICACIÓN Y ORIGEN
               if (markerUbicacion) {
                 markerUbicacion.setLatLng(coords);
                 markerUbicacion.setPopupContent('Origen manual').openPopup();
               } else {
                 markerUbicacion = L.marker(coords).addTo(map).bindPopup('Origen manual').openPopup();
               }
-              origenModificado = true; // Marcar como modificado manualmente
+              origenModificado = true;
               if (window.Android && window.Android.setOrigen) window.Android.setOrigen(direccion);
               mostrarNotificacion('Origen establecido correctamente', 'success');
             } else if (tipo === 'destino') {
@@ -551,7 +549,6 @@
               mostrarNotificacion('Destino establecido correctamente', 'success');
             }
 
-            // CREAR RUTA AUTOMÁTICAMENTE SI HAY ORIGEN Y DESTINO
             crearRutaSiEsNecesario();
             modoSeleccion = null;
           }
@@ -570,7 +567,6 @@
       if (origen && destino) {
         if (rutaControl) map.removeControl(rutaControl);
 
-        // MEJORA: Notificación de cálculo de ruta
         mostrarNotificacion('Calculando ruta óptima...');
 
         rutaControl = L.Routing.control({
@@ -581,20 +577,15 @@
           routeWhileDragging: false
         }).addTo(map);
 
-        // MEJORA: Evento cuando la ruta está calculada
         rutaControl.on('routesfound', function(e) {
           const routes = e.routes;
           const summary = routes[0].summary;
           const distanciaKm = summary.totalDistance / 1000;
-          
-          // NUEVA FUNCIONALIDAD: Calcular y enviar precio
+
           calcularYEnviarPrecio(distanciaKm);
-          
-          // MEJORA: Mostrar información de la ruta calculada
           mostrarNotificacion(`Ruta calculada: ${distanciaKm.toFixed(1)} km`, 'success');
         });
 
-        // MEJORA: Manejo de errores en cálculo de ruta
         rutaControl.on('routingerror', function(e) {
           mostrarNotificacion('No se pudo calcular la ruta. Verifica los puntos seleccionados.', 'error');
         });
@@ -611,36 +602,31 @@
       return null;
     }
 
-    // MEJORA: Función mejorada con notificación detallada - VERSIÓN CORREGIDA
+    // MEJORA: Función mejorada con notificación detallada
     function borrarRutaDesdeApp() {
       let elementosEliminados = [];
 
-      // 1. Eliminar ruta si existe
       if (rutaControl) {
         map.removeControl(rutaControl);
         rutaControl = null;
         elementosEliminados.push('ruta');
       }
 
-      // 2. Eliminar TODOS los marcadores de origen
       if (markerUbicacion) { 
         map.removeLayer(markerUbicacion); 
         markerUbicacion = null; 
         elementosEliminados.push('origen');
       }
 
-      // 3. Eliminar TODOS los marcadores de destino
       if (marcadorDestino) { 
         map.removeLayer(marcadorDestino); 
         marcadorDestino = null; 
         elementosEliminados.push('destino');
       }
 
-      // 4. Resetear estados y variables
       origenModificado = false;
       coordenadasUbicacion = null;
 
-      // 5. Limpiar modos de selección activos
       if (seleccionandoOrigen) {
         seleccionandoOrigen = false;
         document.getElementById('btn-origen').classList.remove('modo-activo');
@@ -651,16 +637,13 @@
         document.getElementById('btn-destino').classList.remove('modo-activo');
       }
 
-      // 6. Ocultar marcador flotante
       document.getElementById('marcador-centro').classList.remove('marcador-activo');
       document.getElementById('marcador-centro').style.display = 'none';
 
-      // 7. Limpiar los EditText en la App Android
       if (window.Android && window.Android.limpiarDirecciones) {
         window.Android.limpiarDirecciones();
       }
 
-      // 8. Mostrar notificación
       if (elementosEliminados.length > 0) {
         mostrarNotificacion('Ruta y todos los marcadores eliminados correctamente', 'success');
       } else {
@@ -677,20 +660,17 @@
         markerUbicacion = null;
         origenModificado = false;
 
-        // Si hay ruta activa, quitarla
         if (rutaControl) {
           map.removeControl(rutaControl);
           rutaControl = null;
         }
 
-        // Limpiar selección si estaba activa
         if (seleccionandoOrigen) {
           seleccionandoOrigen = false;
           document.getElementById('btn-origen').classList.remove('modo-activo');
           document.getElementById('marcador-centro').classList.remove('marcador-activo');
         }
 
-        // Notificar a la app Android que se limpió el origen
         if (window.Android && window.Android.limpiarOrigen) {
           window.Android.limpiarOrigen();
         }
@@ -707,20 +687,17 @@
         map.removeLayer(marcadorDestino);
         marcadorDestino = null;
 
-        // Si hay ruta activa, quitarla
         if (rutaControl) {
           map.removeControl(rutaControl);
           rutaControl = null;
         }
 
-        // Limpiar selección si estaba activa
         if (seleccionandoDestino) {
           seleccionandoDestino = false;
           document.getElementById('btn-destino').classList.remove('modo-activo');
           document.getElementById('marcador-centro').classList.remove('marcador-activo');
         }
 
-        // Notificar a la app Android que se limpió el destino
         if (window.Android && window.Android.limpiarDestino) {
           window.Android.limpiarDestino();
         }
@@ -736,7 +713,6 @@
       limpiarMarcadorOrigen();
       limpiarMarcadorDestino();
 
-      // También limpiar ubicación si es necesario
       if (markerUbicacion) {
         map.removeLayer(markerUbicacion);
         markerUbicacion = null;
@@ -745,7 +721,7 @@
       mostrarNotificacion('Direcciones limpiadas', 'success');
     }
 
-    // NUEVA FUNCIÓN: MOSTRAR DIRECCIONES DESDE ANDROID CON LÍMITES
+    // NUEVA FUNCIÓN: MOSTRAR DIRECCIONES DESDE ANDROID CON LÍMITES DE PROVINCIA
     function mostrarDireccionesEnMapa(origen, destino) {
         console.log("Mostrando en mapa - Origen:", origen, "Destino:", destino);
 
@@ -754,14 +730,12 @@
             return;
         }
 
-        // Limpiar marcadores existentes
         if (markerUbicacion) map.removeLayer(markerUbicacion);
         if (marcadorDestino) map.removeLayer(marcadorDestino);
         if (rutaControl) map.removeControl(rutaControl);
 
         mostrarNotificacion('Buscando ubicaciones en el mapa...');
 
-        // Procesar ambas direcciones
         Promise.all([
             buscarDentroDeLimites(origen),
             buscarDentroDeLimites(destino)
@@ -775,7 +749,6 @@
             const coordsOrigen = L.latLng(latOrigen, lonOrigen);
             const coordsDestino = L.latLng(latDestino, lonDestino);
 
-            // Crear marcadores
             if (markerUbicacion) {
                 markerUbicacion.setLatLng(coordsOrigen);
                 markerUbicacion.setPopupContent(`📍 <strong>Origen</strong><br>${origen}`).openPopup();
@@ -790,11 +763,9 @@
 
             origenModificado = true;
 
-            // Centrar el mapa para mostrar ambos puntos
             const group = new L.featureGroup([markerUbicacion, marcadorDestino]);
             map.fitBounds(group.getBounds().pad(0.1));
 
-            // Crear ruta entre los puntos
             if (rutaControl) map.removeControl(rutaControl);
 
             rutaControl = L.Routing.control({
@@ -806,16 +777,13 @@
                 show: false
             }).addTo(map);
 
-            // Mostrar información cuando la ruta esté lista
             rutaControl.on('routesfound', function(e) {
                 const routes = e.routes;
                 const summary = routes[0].summary;
                 const distanciaKm = summary.totalDistance / 1000;
                 const tiempoMin = Math.round(summary.totalTime / 60);
-                
-                // NUEVA FUNCIONALIDAD: Calcular y enviar precio
+
                 calcularYEnviarPrecio(distanciaKm);
-                
                 mostrarNotificacion(`Ruta calculada: ${distanciaKm.toFixed(1)} km, ${tiempoMin} min`, 'success');
             });
 
@@ -832,7 +800,7 @@
     }
 
     // =============================================
-    // NUEVAS FUNCIONES PARA CALCULAR PRECIO
+    // FUNCIONES PARA CALCULAR PRECIO
     // =============================================
 
     // FUNCIÓN: CALCULAR PRECIO BASADO EN DISTANCIA
@@ -845,22 +813,21 @@
             precio = 50;
         }
 
-        return Math.round(precio); // redondea al entero más cercano
+        return Math.round(precio);
     }
 
     // FUNCIÓN: CALCULAR Y ENVIAR PRECIO A ANDROID
     function calcularYEnviarPrecio(distanciaKm) {
         var precio = calcularPrecio(distanciaKm);
-        
-        // Enviar precio a Android si está disponible
+
         if (window.Android && window.Android.setPrecioViaje) {
             window.Android.setPrecioViaje(precio);
         }
-        
+
         return precio;
     }
 
-    // FUNCIÓN: OBTENER PRECIO ACTUAL (para uso externo si es necesario)
+    // FUNCIÓN: OBTENER PRECIO ACTUAL
     function obtenerPrecioActual() {
         if (rutaControl) {
             try {
