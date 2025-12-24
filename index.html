@@ -156,6 +156,7 @@
       align-items: center;
       z-index: 2000;
       transition: opacity 0.3s ease;
+      display: none; /* Oculto por defecto */
     }
 
     .spinner {
@@ -218,7 +219,7 @@
   </style>
 </head>
 <body>
-  <!-- Loading Screen Mejorado -->
+  <!-- Loading Screen Mejorado - OCULTO POR DEFECTO -->
   <div id="loading-overlay">
     <div class="spinner"></div>
     <div class="loading-text">Cargando mapa...</div>
@@ -307,7 +308,7 @@
     // =============================================
     // MODIFICACIÓN PRINCIPAL: LÍMITES DE LA PROVINCIA COMPLETA
     // =============================================
-    
+
     // LÍMITES DE LA PROVINCIA SANCTI SPÍRITUS (todos los municipios)
     const limitesProvinciaSanctiSpiritus = [
       [21.50, -80.20], // Esquina suroeste (incluye Trinidad, etc.)
@@ -317,8 +318,7 @@
     // Coordenadas del centro de la provincia
     const centroProvincia = [21.93, -79.45];
 
-    // MEJORA: Inicialización mejorada del mapa
-    mostrarLoading();
+    // ELIMINADA LA LLAMADA A mostrarLoading() - El mapa carga directamente
 
     // Centrar el mapa en la provincia completa
     var map = L.map('map').setView(centroProvincia, 10);
@@ -337,8 +337,9 @@
       bounds: limitesProvinciaSanctiSpiritus
     }).addTo(map);
 
+    // ELIMINADA LA LLAMADA A ocultarLoading() - No hay loading que ocultar
     tileLayer.on('load', function() {
-      setTimeout(ocultarLoading, 500);
+      // El mapa ya está cargado visiblemente
     });
 
     tileLayer.on('tileerror', function() {
