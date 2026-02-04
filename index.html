@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>Mapa MiRutaSS - Provincia</title>
+  <title>Mapa MiRutaSS</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
@@ -11,352 +11,46 @@
       height: 100%; 
       margin: 0; 
       padding: 0; 
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    }
-
-    #marcador-centro {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      width: 20px;
-      height: 20px;
-      margin-left: -10px;
-      margin-top: -10px;
-      border-radius: 50%;
-      background: #6764FD;
-      border: 2px solid white;
-      box-shadow: 0 0 10px #6764FD;
-      z-index: 999;
-      pointer-events: none;
-      display: none;
-    }
-
-    /* Layout transparente inferior - MÁS COMPACTO */
-    #botones-layout {
-      position: absolute;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 1000;
-      background: rgba(0,0,0,0.7);
-      padding: 12px 16px;
-      border-radius: 18px;
-      display: flex;
-      flex-direction: row;
-      gap: 16px;
-      box-shadow: 0 6px 20px rgba(0,0,0,0.4);
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(255,255,255,0.1);
-      max-width: 90%;
-    }
-
-    /* Contenedor para cada botón con su etiqueta */
-    .boton-contenedor {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 6px;
-      transition: transform 0.2s ease;
-    }
-
-    .boton-contenedor:hover {
-      transform: translateY(-3px);
-    }
-
-    /* Botones circulares - MÁS PEQUEÑOS */
-    .boton-mapa {
-      width: 50px;
-      height: 50px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, #6764FD, #4b48c9);
-      color: white;
-      border: none;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-      cursor: pointer;
-      transition: all 0.3s ease;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .boton-mapa::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(135deg, rgba(255,255,255,0.2), transparent);
-      border-radius: 50%;
-    }
-
-    .boton-mapa:hover {
-      transform: scale(1.1);
-      box-shadow: 0 6px 16px rgba(103, 100, 253, 0.5);
-    }
-
-    .boton-mapa:active {
-      transform: scale(1.05);
-    }
-
-    /* Iconos SVG - MÁS PEQUEÑOS */
-    .icono-boton {
-      width: 22px;
-      height: 22px;
-      fill: white;
-      filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));
-      transition: transform 0.2s ease;
-    }
-
-    .boton-mapa:hover .icono-boton {
-      transform: scale(1.1);
-    }
-
-    /* Etiquetas de texto debajo de los botones */
-    .etiqueta-boton {
-      color: white;
-      font-size: 12px;
-      font-weight: 500;
-      text-shadow: 0 1px 2px rgba(0,0,0,0.5);
-      white-space: nowrap;
-      letter-spacing: 0.3px;
-    }
-
-    /* Indicador de modo activo */
-    .modo-activo {
-      box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.8), 0 6px 16px rgba(103, 100, 253, 0.6);
-    }
-
-    /* Animación para el marcador de centro */
-    @keyframes pulse {
-      0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
-      50% { transform: translate(-50%, -50%) scale(1.2); opacity: 0.7; }
-      100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
-    }
-
-    .marcador-activo {
-      animation: pulse 1.5s infinite;
-    }
-
-    /* MEJORAS AGREGADAS */
-
-    /* Loading State */
-    #loading-overlay {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(255, 255, 255, 0.9);
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      z-index: 2000;
-      transition: opacity 0.3s ease;
-      display: none; /* Oculto por defecto */
-    }
-
-    .spinner {
-      width: 40px;
-      height: 40px;
-      border: 4px solid #f3f3f3;
-      border-top: 4px solid #6764FD;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-      margin-bottom: 15px;
-    }
-
-    .loading-text {
-      color: #333;
-      font-size: 14px;
-      font-weight: 500;
-    }
-
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-
-    /* Notificaciones mejoradas */
-    .custom-alert {
-      position: fixed;
-      top: 20px;
-      left: 50%;
-      transform: translateX(-50%) translateY(-100px);
-      background: rgba(0,0,0,0.9);
-      color: white;
-      padding: 12px 20px;
-      border-radius: 10px;
-      font-size: 14px;
-      font-weight: 500;
-      z-index: 2000;
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(255,255,255,0.1);
-      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-      transition: all 0.3s ease;
-      opacity: 0;
-    }
-
-    .custom-alert.show {
-      transform: translateX(-50%) translateY(0);
-      opacity: 1;
-    }
-
-    /* Mejoras de accesibilidad */
-    .boton-mapa:focus {
-      outline: 2px solid rgba(255,255,255,0.5);
-      outline-offset: 2px;
-    }
-
-    /* Estados de carga mejorados */
-    .loading-state {
-      opacity: 0.7;
-      pointer-events: none;
     }
   </style>
 </head>
 <body>
-  <!-- Loading Screen Mejorado - OCULTO POR DEFECTO -->
-  <div id="loading-overlay">
-    <div class="spinner"></div>
-    <div class="loading-text">Cargando mapa...</div>
-  </div>
-
-  <!-- Sistema de Notificaciones -->
-  <div id="customAlert" class="custom-alert"></div>
-
   <div id="map"></div>
-  <div id="marcador-centro"></div>
-
-  <!-- Layout transparente con los botones - MÁS COMPACTO -->
-  <div id="botones-layout">
-    <div class="boton-contenedor">
-      <button id="btn-origen" onclick="toggleOrigen()" class="boton-mapa" title="Fijar origen">
-        <svg class="icono-boton" viewBox="0 0 24 24">
-          <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
-        </svg>
-      </button>
-      <span class="etiqueta-boton">Origen</span>
-    </div>
-    <div class="boton-contenedor">
-      <button id="btn-destino" onclick="toggleDestino()" class="boton-mapa" title="Fijar destino">
-        <svg class="icono-boton" viewBox="0 0 24 24">
-          <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm-1 11.5v-6h2v6h-2z"/>
-          <circle cx="12" cy="9" r="1.5"/>
-        </svg>
-      </button>
-      <span class="etiqueta-boton">Destino</span>
-    </div>
-    <div class="boton-contenedor">
-      <button onclick="borrarRutaDesdeApp()" class="boton-mapa" title="Borrar ruta">
-        <svg class="icono-boton" viewBox="0 0 24 24">
-          <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
-        </svg>
-      </button>
-      <span class="etiqueta-boton">Borrar ruta</span>
-    </div>
-    <div class="boton-contenedor">
-      <button onclick="restaurarUbicacion()" class="boton-mapa" title="Restaurar ubicación">
-        <svg class="icono-boton" viewBox="0 0 24 24">
-          <path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3c-.46-4.17-3.77-7.48-7.94-7.94V1h-2v2.06C6.83 3.52 3.52 6.83 3.06 11H1v2h2.06c.46 4.17 3.77 7.48 7.94 7.94V23h2v-2.06c4.17-.46 7.48-3.77 7.94-7.94H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/>
-        </svg>
-      </button>
-      <span class="etiqueta-boton">Localización</span>
-    </div>
-  </div>
 
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.min.js"></script>
   <script>
-    // MEJORA: Sistema de notificaciones
-    function mostrarNotificacion(mensaje, tipo = 'info') {
-      const alert = document.getElementById('customAlert');
-      alert.textContent = mensaje;
-      alert.className = 'custom-alert';
-
-      if (tipo === 'error') {
-        alert.style.background = 'rgba(255, 71, 87, 0.9)';
-      } else if (tipo === 'success') {
-        alert.style.background = 'rgba(46, 213, 115, 0.9)';
-      }
-
-      alert.classList.add('show');
-
-      setTimeout(() => {
-        alert.classList.remove('show');
-      }, 3000);
-    }
-
-    // MEJORA: Loading state management
-    function mostrarLoading() {
-      document.getElementById('loading-overlay').style.display = 'flex';
-      setTimeout(() => {
-        document.getElementById('loading-overlay').style.opacity = '1';
-      }, 10);
-    }
-
-    function ocultarLoading() {
-      document.getElementById('loading-overlay').style.opacity = '0';
-      setTimeout(() => {
-        document.getElementById('loading-overlay').style.display = 'none';
-      }, 300);
-    }
-
-    // =============================================
-    // MODIFICACIÓN PRINCIPAL: LÍMITES DE LA PROVINCIA COMPLETA
-    // =============================================
-
-    // LÍMITES DE LA PROVINCIA SANCTI SPÍRITUS (todos los municipios)
+    // Límites de la provincia Sancti Spíritus
     const limitesProvinciaSanctiSpiritus = [
-      [21.50, -80.20], // Esquina suroeste (incluye Trinidad, etc.)
-      [22.40, -79.00]  // Esquina noreste (incluye Yaguajay, etc.)
+      [21.50, -80.20],
+      [22.40, -79.00]
     ];
 
     // Coordenadas del centro de la provincia
     const centroProvincia = [21.93, -79.45];
 
-    // ELIMINADA LA LLAMADA A mostrarLoading() - El mapa carga directamente
-
-    // Centrar el mapa en la provincia completa
+    // Crear mapa
     var map = L.map('map').setView(centroProvincia, 10);
 
-    // Establecer límites del mapa para toda la provincia
+    // Establecer límites del mapa
     map.setMaxBounds(limitesProvinciaSanctiSpiritus);
     map.on('drag', function() {
       map.panInsideBounds(limitesProvinciaSanctiSpiritus, { animate: false });
     });
 
-    // MEJORA: Manejo de errores en carga de tiles
-    var tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    // Capa de mapa
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 18,
-      minZoom: 9, // Zoom más alejado para ver toda la provincia
+      minZoom: 9,
       attribution: '© OpenStreetMap',
       bounds: limitesProvinciaSanctiSpiritus
     }).addTo(map);
 
-    // ELIMINADA LA LLAMADA A ocultarLoading() - No hay loading que ocultar
-    tileLayer.on('load', function() {
-      // El mapa ya está cargado visiblemente
-    });
-
-    tileLayer.on('tileerror', function() {
-      mostrarNotificacion('Error cargando el mapa. Verifica tu conexión.', 'error');
-    });
-
     var rutaControl = null;
-    var markerUbicacion = null;
-    var marcadorDestino = null;
-    var direccionDetectada = "";
-    var coordenadasUbicacion = null;
-    var origenModificado = false;
-    var modoSeleccion = null;
-    var seleccionandoOrigen = false;
-    var seleccionandoDestino = false;
+    var markerOrigen = null;
+    var markerDestino = null;
 
-    // FUNCIÓN: VERIFICAR SI LAS COORDENADAS ESTÁN DENTRO DE LA PROVINCIA
+    // Función para verificar límites
     function estaDentroDeLimites(lat, lng) {
       return lat >= limitesProvinciaSanctiSpiritus[0][0] && 
              lat <= limitesProvinciaSanctiSpiritus[1][0] && 
@@ -364,494 +58,129 @@
              lng <= limitesProvinciaSanctiSpiritus[1][1];
     }
 
-    // FUNCIÓN: BUSCAR DENTRO DE LÍMITES DE LA PROVINCIA CON NOMINATIM
+    // Función para buscar dentro de límites
     function buscarDentroDeLimites(direccion) {
       const bounds = limitesProvinciaSanctiSpiritus;
       const viewbox = `${bounds[0][1]},${bounds[0][0]},${bounds[1][1]},${bounds[1][0]}`;
 
-      return fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(direccion)}&limit=5&viewbox=${viewbox}&bounded=1&accept-language=es`)
-        .then(res => {
-          if (!res.ok) throw new Error('Error en el servidor');
-          return res.json();
-        })
+      return fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(direccion)}&limit=1&viewbox=${viewbox}&bounded=1`)
+        .then(res => res.json())
         .then(data => {
           if (data && data.length > 0) {
-            // Filtrar resultados que estén dentro de los límites de la provincia
-            const resultadosFiltrados = data.filter(item => 
-              estaDentroDeLimites(parseFloat(item.lat), parseFloat(item.lon))
-            );
-
-            if (resultadosFiltrados.length > 0) {
-              return resultadosFiltrados[0];
-            } else {
-              throw new Error(`"${direccion}" no se encuentra dentro de la provincia Sancti Spíritus`);
+            const resultado = data[0];
+            if (estaDentroDeLimites(parseFloat(resultado.lat), parseFloat(resultado.lon))) {
+              return resultado;
             }
-          } else {
-            throw new Error(`No se encontró: "${direccion}"`);
           }
+          throw new Error(`"${direccion}" no encontrado dentro de la provincia`);
         });
     }
 
-    // MEJORA: Función mejorada con notificaciones
-    function toggleOrigen() {
-      if (!seleccionandoOrigen) {
-        seleccionandoOrigen = true;
-        seleccionandoDestino = false;
-        document.getElementById('btn-origen').classList.add('modo-activo');
-        document.getElementById('marcador-centro').classList.add('marcador-activo');
-        activarMarcadorFlotante('origen');
-        mostrarNotificacion('Selecciona el punto de origen en el mapa');
-      } else {
-        seleccionandoOrigen = false;
-        document.getElementById('btn-origen').classList.remove('modo-activo');
-        document.getElementById('marcador-centro').classList.remove('marcador-activo');
-        confirmarMarcadorFlotante('origen');
-        eliminarUbicacion();
-      }
-    }
+    // Función principal para mostrar direcciones
+    function mostrarDireccionesEnMapa(origen, destino) {
+      // Limpiar marcadores previos
+      if (markerOrigen) map.removeLayer(markerOrigen);
+      if (markerDestino) map.removeLayer(markerDestino);
+      if (rutaControl) map.removeControl(rutaControl);
 
-    // MEJORA: Función mejorada con notificaciones
-    function toggleDestino() {
-      if (!seleccionandoDestino) {
-        seleccionandoDestino = true;
-        seleccionandoOrigen = false;
-        document.getElementById('btn-destino').classList.add('modo-activo');
-        document.getElementById('marcador-centro').classList.add('marcador-activo');
-        activarMarcadorFlotante('destino');
-        mostrarNotificacion('Selecciona el punto de destino en el mapa');
-      } else {
-        seleccionandoDestino = false;
-        document.getElementById('btn-destino').classList.remove('modo-activo');
-        document.getElementById('marcador-centro').classList.remove('marcador-activo');
-        confirmarMarcadorFlotante('destino');
-      }
-    }
+      // Buscar ambas ubicaciones
+      Promise.all([
+        buscarDentroDeLimites(origen),
+        buscarDentroDeLimites(destino)
+      ])
+      .then(([dataOrigen, dataDestino]) => {
+        const coordsOrigen = L.latLng(
+          parseFloat(dataOrigen.lat),
+          parseFloat(dataOrigen.lon)
+        );
+        
+        const coordsDestino = L.latLng(
+          parseFloat(dataDestino.lat),
+          parseFloat(dataDestino.lon)
+        );
 
-    function detectarUbicacion() {
-      map.locate({ setView: true, maxZoom: 14 });
-    }
+        // Crear marcadores
+        markerOrigen = L.marker(coordsOrigen)
+          .addTo(map)
+          .bindPopup(`<b>Origen:</b><br>${origen}`);
 
-    map.on('locationfound', function(e) {
-      // Verificar si la ubicación está dentro de la provincia
-      if (!estaDentroDeLimites(e.latitude, e.longitude)) {
-        mostrarNotificacion('Tu ubicación está fuera de la provincia Sancti Spíritus', 'error');
-        return;
-      }
+        markerDestino = L.marker(coordsDestino)
+          .addTo(map)
+          .bindPopup(`<b>Destino:</b><br>${destino}`);
 
-      coordenadasUbicacion = [e.latitude, e.longitude];
-
-      if (!markerUbicacion && !origenModificado) {
-        markerUbicacion = L.marker(e.latlng).addTo(map).bindPopup('Tu ubicación').openPopup();
-      } else if (markerUbicacion && !origenModificado) {
-        markerUbicacion.setLatLng(e.latlng);
-      }
-
-      fetch('https://nominatim.openstreetmap.org/reverse?format=json&lat=' + e.latitude + '&lon=' + e.longitude)
-        .then(res => {
-          if (!res.ok) throw new Error('Error en la respuesta del servidor');
-          return res.json();
-        })
-        .then(data => {
-          if (data && data.display_name) {
-            direccionDetectada = data.display_name;
-            if (!origenModificado && window.Android && window.Android.setOrigen) {
-              window.Android.setOrigen(direccionDetectada);
-            }
-          }
-        })
-        .catch(error => {
-          console.warn('Error obteniendo dirección:', error);
-          mostrarNotificacion('Error obteniendo la dirección', 'error');
-        });
-    });
-
-    // MEJORA: Manejo mejorado de errores de ubicación
-    map.on('locationerror', function(e) {
-      let mensaje = 'No se pudo obtener tu ubicación';
-      if (e.code === 1) {
-        mensaje = 'Permiso de ubicación denegado. Activa la ubicación en ajustes.';
-      } else if (e.code === 2) {
-        mensaje = 'Ubicación no disponible. Verifica tu conexión.';
-      } else if (e.code === 3) {
-        mensaje = 'Tiempo de espera agotado para obtener ubicación.';
-      }
-      mostrarNotificacion(mensaje, 'error');
-    });
-
-    function eliminarUbicacion() {
-      origenModificado = true;
-      if (markerUbicacion) {
-        map.removeLayer(markerUbicacion);
-        markerUbicacion = null;
-      }
-    }
-
-    // MEJORA: Función mejorada con notificación
-    function restaurarUbicacion() {
-      origenModificado = false;
-      if (rutaControl) { map.removeControl(rutaControl); rutaControl = null; }
-      if (marcadorDestino) { map.removeLayer(marcadorDestino); marcadorDestino = null; }
-
-      if (markerUbicacion) {
-        map.removeLayer(markerUbicacion);
-        markerUbicacion = null;
-      }
-
-      if (window.Android && window.Android.limpiarDirecciones) {
-        window.Android.limpiarDirecciones();
-      }
-
-      detectarUbicacion();
-      mostrarNotificacion('Ubicación restaurada correctamente', 'success');
-    }
-
-    function activarMarcadorFlotante(tipo) {
-      modoSeleccion = tipo;
-      document.getElementById("marcador-centro").style.display = "block";
-    }
-
-    // MEJORA: Función mejorada con manejo de errores
-    function confirmarMarcadorFlotante(tipo) {
-      var coords = map.getCenter();
-
-      // Verificar que el punto seleccionado esté dentro de los límites de la provincia
-      if (!estaDentroDeLimites(coords.lat, coords.lng)) {
-        mostrarNotificacion('El punto seleccionado está fuera de la provincia Sancti Spíritus', 'error');
-        document.getElementById("marcador-centro").style.display = "none";
-        return;
-      }
-
-      document.getElementById("marcador-centro").style.display = "none";
-
-      mostrarNotificacion('Obteniendo dirección...');
-
-      fetch('https://nominatim.openstreetmap.org/reverse?format=json&lat=' + coords.lat + '&lon=' + coords.lng)
-        .then(res => {
-          if (!res.ok) throw new Error('Error en la respuesta del servidor');
-          return res.json();
-        })
-        .then(data => {
-          if (data && data.display_name) {
-            var direccion = data.display_name;
-            if (tipo === 'origen') {
-              if (markerUbicacion) {
-                markerUbicacion.setLatLng(coords);
-                markerUbicacion.setPopupContent('Origen manual').openPopup();
-              } else {
-                markerUbicacion = L.marker(coords).addTo(map).bindPopup('Origen manual').openPopup();
-              }
-              origenModificado = true;
-              if (window.Android && window.Android.setOrigen) window.Android.setOrigen(direccion);
-              mostrarNotificacion('Origen establecido correctamente', 'success');
-            } else if (tipo === 'destino') {
-              if (marcadorDestino) map.removeLayer(marcadorDestino);
-              marcadorDestino = L.marker(coords).addTo(map).bindPopup('Destino').openPopup();
-              if (window.Android && window.Android.setDestino) window.Android.setDestino(direccion);
-              mostrarNotificacion('Destino establecido correctamente', 'success');
-            }
-
-            crearRutaSiEsNecesario();
-            modoSeleccion = null;
-          }
-        })
-        .catch(error => {
-          console.error('Error obteniendo dirección:', error);
-          mostrarNotificacion('Error al obtener la dirección. Intenta nuevamente.', 'error');
-        });
-    }
-
-    // FUNCIÓN: CREAR RUTA AUTOMÁTICAMENTE
-    function crearRutaSiEsNecesario() {
-      var origen = obtenerOrigenActual();
-      var destino = marcadorDestino ? marcadorDestino.getLatLng() : null;
-
-      if (origen && destino) {
-        if (rutaControl) map.removeControl(rutaControl);
-
-        mostrarNotificacion('Calculando ruta óptima...');
-
+        // Crear ruta
         rutaControl = L.Routing.control({
-          waypoints: [origen, destino],
-          lineOptions: { styles: [{ color: '#6764FD', weight: 5 }] },
+          waypoints: [coordsOrigen, coordsDestino],
+          lineOptions: { 
+            styles: [{ 
+              color: '#2196F3', 
+              weight: 6,
+              opacity: 0.8 
+            }] 
+          },
           createMarker: () => null,
           addWaypoints: false,
-          routeWhileDragging: false
+          routeWhileDragging: false,
+          show: false
         }).addTo(map);
 
+        // Ajustar vista para ver ambos puntos
+        const group = new L.featureGroup([markerOrigen, markerDestino]);
+        map.fitBounds(group.getBounds().pad(0.1));
+
+        // Evento cuando se encuentra la ruta
         rutaControl.on('routesfound', function(e) {
-          const routes = e.routes;
-          const summary = routes[0].summary;
-          const distanciaKm = summary.totalDistance / 1000;
-
-          calcularYEnviarPrecio(distanciaKm);
-          mostrarNotificacion(`Ruta calculada: ${distanciaKm.toFixed(1)} km`, 'success');
+          const ruta = e.routes[0];
+          const distanciaKm = ruta.summary.totalDistance / 1000;
+          
+          // Notificar a Android de la distancia (sin precio)
+          if (window.Android && window.Android.setDistancia) {
+            window.Android.setDistancia(distanciaKm.toFixed(1));
+          }
         });
 
-        rutaControl.on('routingerror', function(e) {
-          mostrarNotificacion('No se pudo calcular la ruta. Verifica los puntos seleccionados.', 'error');
-        });
-      }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        // Notificar error a Android
+        if (window.Android && window.Android.errorMapa) {
+          window.Android.errorMapa(error.message);
+        }
+      });
     }
 
-    // FUNCIÓN: OBTENER ORIGEN ACTUAL (AUTOMÁTICO O MANUAL)
-    function obtenerOrigenActual() {
-      if (markerUbicacion) {
-        return markerUbicacion.getLatLng();
-      } else if (coordenadasUbicacion && !origenModificado) {
-        return L.latLng(coordenadasUbicacion[0], coordenadasUbicacion[1]);
-      }
-      return null;
-    }
-
-    // MEJORA: Función mejorada con notificación detallada
+    // Función para limpiar todo el mapa
     function borrarRutaDesdeApp() {
-      let elementosEliminados = [];
-
-      if (rutaControl) {
-        map.removeControl(rutaControl);
-        rutaControl = null;
-        elementosEliminados.push('ruta');
+      if (markerOrigen) { 
+        map.removeLayer(markerOrigen); 
+        markerOrigen = null; 
       }
-
-      if (markerUbicacion) { 
-        map.removeLayer(markerUbicacion); 
-        markerUbicacion = null; 
-        elementosEliminados.push('origen');
+      
+      if (markerDestino) { 
+        map.removeLayer(markerDestino); 
+        markerDestino = null; 
       }
-
-      if (marcadorDestino) { 
-        map.removeLayer(marcadorDestino); 
-        marcadorDestino = null; 
-        elementosEliminados.push('destino');
+      
+      if (rutaControl) { 
+        map.removeControl(rutaControl); 
+        rutaControl = null; 
       }
-
-      origenModificado = false;
-      coordenadasUbicacion = null;
-
-      if (seleccionandoOrigen) {
-        seleccionandoOrigen = false;
-        document.getElementById('btn-origen').classList.remove('modo-activo');
-      }
-
-      if (seleccionandoDestino) {
-        seleccionandoDestino = false;
-        document.getElementById('btn-destino').classList.remove('modo-activo');
-      }
-
-      document.getElementById('marcador-centro').classList.remove('marcador-activo');
-      document.getElementById('marcador-centro').style.display = 'none';
-
-      if (window.Android && window.Android.limpiarDirecciones) {
-        window.Android.limpiarDirecciones();
-      }
-
-      if (elementosEliminados.length > 0) {
-        mostrarNotificacion('Ruta y todos los marcadores eliminados correctamente', 'success');
-      } else {
-        mostrarNotificacion('No había elementos para eliminar', 'info');
-      }
-
-      console.log('Elementos eliminados:', elementosEliminados);
-    }
-
-    // FUNCIÓN: LIMPIAR SOLO EL MARCADOR DE ORIGEN
-    function limpiarMarcadorOrigen() {
-      if (markerUbicacion) {
-        map.removeLayer(markerUbicacion);
-        markerUbicacion = null;
-        origenModificado = false;
-
-        if (rutaControl) {
-          map.removeControl(rutaControl);
-          rutaControl = null;
-        }
-
-        if (seleccionandoOrigen) {
-          seleccionandoOrigen = false;
-          document.getElementById('btn-origen').classList.remove('modo-activo');
-          document.getElementById('marcador-centro').classList.remove('marcador-activo');
-        }
-
-        if (window.Android && window.Android.limpiarOrigen) {
-          window.Android.limpiarOrigen();
-        }
-
-        mostrarNotificacion('Origen eliminado', 'success');
-      } else {
-        mostrarNotificacion('No hay origen para eliminar', 'info');
+      
+      // Notificar a Android
+      if (window.Android && window.Android.rutaBorrada) {
+        window.Android.rutaBorrada();
       }
     }
 
-    // FUNCIÓN: LIMPIAR SOLO EL MARCADOR DE DESTINO
-    function limpiarMarcadorDestino() {
-      if (marcadorDestino) {
-        map.removeLayer(marcadorDestino);
-        marcadorDestino = null;
-
-        if (rutaControl) {
-          map.removeControl(rutaControl);
-          rutaControl = null;
-        }
-
-        if (seleccionandoDestino) {
-          seleccionandoDestino = false;
-          document.getElementById('btn-destino').classList.remove('modo-activo');
-          document.getElementById('marcador-centro').classList.remove('marcador-activo');
-        }
-
-        if (window.Android && window.Android.limpiarDestino) {
-          window.Android.limpiarDestino();
-        }
-
-        mostrarNotificacion('Destino eliminado', 'success');
-      } else {
-        mostrarNotificacion('No hay destino para eliminar', 'info');
-      }
+    // Función para restaurar vista inicial
+    function restaurarVista() {
+      map.setView(centroProvincia, 10);
     }
 
-    // FUNCIÓN PARA LIMPIAR AMBOS CAMPOS DESDE ANDROID
-    function limpiarDireccionesDesdeAndroid() {
-      limpiarMarcadorOrigen();
-      limpiarMarcadorDestino();
-
-      if (markerUbicacion) {
-        map.removeLayer(markerUbicacion);
-        markerUbicacion = null;
-      }
-
-      mostrarNotificacion('Direcciones limpiadas', 'success');
-    }
-
-    // NUEVA FUNCIÓN: MOSTRAR DIRECCIONES DESDE ANDROID CON LÍMITES DE PROVINCIA
-    function mostrarDireccionesEnMapa(origen, destino) {
-        console.log("Mostrando en mapa - Origen:", origen, "Destino:", destino);
-
-        if (!origen || !destino || origen.trim() === '' || destino.trim() === '') {
-            mostrarNotificacion('Debes proporcionar origen y destino', 'error');
-            return;
-        }
-
-        if (markerUbicacion) map.removeLayer(markerUbicacion);
-        if (marcadorDestino) map.removeLayer(marcadorDestino);
-        if (rutaControl) map.removeControl(rutaControl);
-
-        mostrarNotificacion('Buscando ubicaciones en el mapa...');
-
-        Promise.all([
-            buscarDentroDeLimites(origen),
-            buscarDentroDeLimites(destino)
-        ])
-        .then(([dataOrigen, dataDestino]) => {
-            const latOrigen = parseFloat(dataOrigen.lat);
-            const lonOrigen = parseFloat(dataOrigen.lon);
-            const latDestino = parseFloat(dataDestino.lat);
-            const lonDestino = parseFloat(dataDestino.lon);
-
-            const coordsOrigen = L.latLng(latOrigen, lonOrigen);
-            const coordsDestino = L.latLng(latDestino, lonDestino);
-
-            if (markerUbicacion) {
-                markerUbicacion.setLatLng(coordsOrigen);
-                markerUbicacion.setPopupContent(`📍 <strong>Origen</strong><br>${origen}`).openPopup();
-            } else {
-                markerUbicacion = L.marker(coordsOrigen).addTo(map)
-                    .bindPopup(`📍 <strong>Origen</strong><br>${origen}`).openPopup();
-            }
-
-            if (marcadorDestino) map.removeLayer(marcadorDestino);
-            marcadorDestino = L.marker(coordsDestino).addTo(map)
-                .bindPopup(`🎯 <strong>Destino</strong><br>${destino}`).openPopup();
-
-            origenModificado = true;
-
-            const group = new L.featureGroup([markerUbicacion, marcadorDestino]);
-            map.fitBounds(group.getBounds().pad(0.1));
-
-            if (rutaControl) map.removeControl(rutaControl);
-
-            rutaControl = L.Routing.control({
-                waypoints: [coordsOrigen, coordsDestino],
-                lineOptions: { styles: [{ color: '#6764FD', weight: 5 }] },
-                createMarker: () => null,
-                addWaypoints: false,
-                routeWhileDragging: false,
-                show: false
-            }).addTo(map);
-
-            rutaControl.on('routesfound', function(e) {
-                const routes = e.routes;
-                const summary = routes[0].summary;
-                const distanciaKm = summary.totalDistance / 1000;
-                const tiempoMin = Math.round(summary.totalTime / 60);
-
-                calcularYEnviarPrecio(distanciaKm);
-                mostrarNotificacion(`Ruta calculada: ${distanciaKm.toFixed(1)} km, ${tiempoMin} min`, 'success');
-            });
-
-            rutaControl.on('routingerror', function(e) {
-                mostrarNotificacion('No se pudo calcular la ruta entre las ubicaciones', 'error');
-            });
-
-            mostrarNotificacion('Ubicaciones encontradas en el mapa', 'success');
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            mostrarNotificacion(error.message, 'error');
-        });
-    }
-
-    // =============================================
-    // FUNCIONES PARA CALCULAR PRECIO
-    // =============================================
-
-    // FUNCIÓN: CALCULAR PRECIO BASADO EN DISTANCIA
-    function calcularPrecio(distanciaKm) {
-        var tarifaPorKm = 150.0;
-        var precio = distanciaKm * tarifaPorKm;
-
-        // Tarifa mínima de 50 pesos
-        if (precio < 50) {
-            precio = 50;
-        }
-
-        return Math.round(precio);
-    }
-
-    // FUNCIÓN: CALCULAR Y ENVIAR PRECIO A ANDROID
-    function calcularYEnviarPrecio(distanciaKm) {
-        var precio = calcularPrecio(distanciaKm);
-
-        if (window.Android && window.Android.setPrecioViaje) {
-            window.Android.setPrecioViaje(precio);
-        }
-
-        return precio;
-    }
-
-    // FUNCIÓN: OBTENER PRECIO ACTUAL
-    function obtenerPrecioActual() {
-        if (rutaControl) {
-            try {
-                const routes = rutaControl.getPlan().routes;
-                if (routes && routes.length > 0) {
-                    const distanciaKm = routes[0].summary.totalDistance / 1000;
-                    return calcularPrecio(distanciaKm);
-                }
-            } catch (error) {
-                console.error('Error obteniendo distancia:', error);
-            }
-        }
-        return 0;
-    }
-
-    // Inicializar la ubicación al cargar la página
-    detectarUbicacion();
-
-    // MEJORA: Manejo de errores global
-    window.addEventListener('error', function(e) {
-      console.error('Error global:', e.error);
-      mostrarNotificacion('Ha ocurrido un error inesperado', 'error');
-    });
+    // Hacer funciones disponibles globalmente
+    window.mostrarDireccionesEnMapa = mostrarDireccionesEnMapa;
+    window.borrarRutaDesdeApp = borrarRutaDesdeApp;
+    window.restaurarVista = restaurarVista;
 
   </script>
 </body>
